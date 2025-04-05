@@ -1,6 +1,6 @@
 require("dotenv").config();
 const fs = require("fs");
-const API_KEY = process.env.API_KEY;
+const API_KEY = "AIzaSyDu2BsZ_nzDi6AaO_yBnL0SMpZDxSWd0TM";
 const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
 const inputText = `Built In Logo
 Jobs
