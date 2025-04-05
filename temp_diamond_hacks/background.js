@@ -1,6 +1,6 @@
 // background.js
-chrome.runtime.onInstalled.addListener(() => {
-  console.log("Extension installed");
+chrome.action.onClicked.addListener((tab) => {
+  console.log("Extension icon clicked");
 });
 
 // This listener will be called when the popup requests content extraction
