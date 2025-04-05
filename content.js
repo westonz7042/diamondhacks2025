@@ -32,6 +32,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "extractContent") {
     console.log("Extracting content from page");
     const result = extractPageContent();
+    
+    // Pass along the API key with the result
+    if (request.apiKey) {
+      result.apiKey = request.apiKey;
+    }
+    
     console.log("Extraction result:", result);
     sendResponse(result);
   }

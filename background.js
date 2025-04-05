@@ -1,18 +1,23 @@
 // background.js
-// Import the cleanupText function from summary.js
-// Note: This won't work directly in a browser extension due to module loading issues
-// We'll need to use the fetch API to load the API key from a secure source
-const API_KEY = "AIzaSyDu2BsZ_nzDi6AaO_yBnL0SMpZDxSWd0TM";
-const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
+// We get the API key from storage now
+let API_KEY = "";
+
+// Function to create the endpoint URL with the latest API key
+function getEndpoint() {
+  return `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
+}
 
 chrome.runtime.onInstalled.addListener(() => {
   console.log("Extension installed");
 });
 
 // Function to clean up text using Gemini API
-async function cleanupTextWithAPI(text) {
+async function cleanupTextWithAPI(text, apiKey) {
+  // Use the API key passed from the request
+  API_KEY = apiKey;
+  
   try {
-    const response = await fetch(GEMINI_ENDPOINT, {
+    const response = await fetch(getEndpoint(), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -54,20 +59,29 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "extract") {
     console.log("Extraction requested for tab:", request.tabId);
     
+    // Store API key for use by other parts of the extension
+    if (request.apiKey) {
+      chrome.storage.sync.set({apiKey: request.apiKey});
+      API_KEY = request.apiKey;
+    }
+    
     // Execute content script
     chrome.scripting.executeScript({
       target: { tabId: request.tabId },
       files: ["readability.js", "content.js"]
     }).then(() => {
       // Now that the content script is injected, send a message to it
-      chrome.tabs.sendMessage(request.tabId, { action: "extractContent" }, async (response) => {
+      chrome.tabs.sendMessage(request.tabId, { 
+        action: "extractContent",
+        apiKey: request.apiKey 
+      }, async (response) => {
         console.log("Got response from content script:", response);
         
         if (response && response.success) {
           try {
             // Clean up the extracted text
             console.log("Cleaning up extracted text...");
-            const cleanedResponse = await cleanupTextWithAPI(response.content);
+            const cleanedResponse = await cleanupTextWithAPI(response.content, request.apiKey);
             
             if (cleanedResponse.success) {
               // Return the cleaned text
