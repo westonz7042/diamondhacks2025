@@ -1,6 +1,8 @@
-require("dotenv").config();
-const fs = require("fs");
-const API_KEY = process.env.API_KEY;
+//flashcard.js
+
+//require("dotenv").config();
+//const fs = require("fs");
+const API_KEY = "Enter API Key";
 const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
 const inputText = `Built In Logo
 Jobs
@@ -320,7 +322,7 @@ Your Privacy Choices/Cookie Settings
 CA Notice of Collection
 © Built In 2025
 `;
-async function generateFlashcardsCSV(text) {
+export async function generateFlashcards(text) {
   const prompt = `
   Create 10 flashcards based on the following article. Only include facts, definitions, or concepts that would help someone understand or study the topic. Your output should imitate a CSV file where each row is a flashcard in the following format: Question, Answer.
   Article:
@@ -353,20 +355,20 @@ async function generateFlashcardsCSV(text) {
       return;
     }
     const lines = csvOutput.trim().split("\n");
-    if (
+
+    //console.log("Lines", lines);
+    while (
       lines[0].toLowerCase().includes("question") &&
       lines[0].toLowerCase().includes("answer")
     ) {
       lines.shift();
     }
     const csvOutput2 = lines.join("\n");
-    console.log(csvOutput2);
 
-    fs.writeFileSync("flashcards.csv", csvOutput2.trim());
-    console.log("✅ Flashcards saved to flashcards.csv");
+    //fs.writeFileSync("flashcards.csv", csvOutput2.trim());
+    //console.log("✅ Flashcards saved to flashcards.csv");
+    return csvOutput2;
   } catch (error) {
     console.error("Request failed:", error);
   }
 }
-
-generateFlashcardsCSV(inputText);
