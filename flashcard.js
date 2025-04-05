@@ -1,13 +1,18 @@
 //flashcard.js
 
-//require("dotenv").config();
-//const fs = require("fs");
+// We get the API key from storage
 let API_KEY = "";
 
 // Function to create the endpoint URL with the latest API key
 function getEndpoint() {
   return `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
 }
+
+import readline from "node:readline";
+import { stdin as input, stdout as output } from "node:process";
+
+const numFlashcards = 5;
+
 const inputText = `Built In Logo
 Jobs
 Companies
@@ -30,7 +35,7 @@ Image: Shutterstock / Built In
 Brand Studio Logo
 UPDATED BY
 Brennan Whitfield | Dec 11, 2024
-Machine learning is an application of artificial intelligence where a machine learns from past experiences (or input data) and makes future predictions. It’s typically divided into three categories: supervised learning, unsupervised learning and reinforcement learning.
+Machine learning is an application of artificial intelligence where a machine learns from past experiences (or input data) and makes future predictions. It's typically divided into three categories: supervised learning, unsupervised learning and reinforcement learning.
 
 This article introduces the basics of machine learning theory, laying down the common concepts and techniques involved. This post is intended for people starting with machine learning, making it easy to follow the core concepts and get comfortable with machine learning basics.
 
@@ -42,11 +47,11 @@ Machine learning is an application of artificial intelligence in which a machine
 
 Machine learning basics explained. | Video: Fireship
 What Is Machine Learning?
-In 1959, Arthur Samuel, a computer scientist who pioneered the study of artificial intelligence, described machine learning as “the study that gives computers the ability to learn without being explicitly programmed.”
+In 1959, Arthur Samuel, a computer scientist who pioneered the study of artificial intelligence, described machine learning as "the study that gives computers the ability to learn without being explicitly programmed."
 
-Alan Turing’s seminal paper introduced a benchmark standard for demonstrating machine intelligence, such that a machine has to be intelligent and responsive in a manner that cannot be differentiated from that of a human being.
+Alan Turing's seminal paper introduced a benchmark standard for demonstrating machine intelligence, such that a machine has to be intelligent and responsive in a manner that cannot be differentiated from that of a human being.
 
-A more technical definition given by Tom M. Mitchell’s 1997 paper: “A computer program is said to learn from experience E with respect to some class of tasks T and performance measure P, if its performance at tasks in T, as measured by P, improves with experience E.” For example, a handwriting recognition learning problem:
+A more technical definition given by Tom M. Mitchell's 1997 paper: "A computer program is said to learn from experience E with respect to some class of tasks T and performance measure P, if its performance at tasks in T, as measured by P, improves with experience E." For example, a handwriting recognition learning problem:
 
 Task T: Recognizing and classifying handwritten words within images.
 Performance measure P: Percent of words correctly classified, accuracy.
@@ -81,7 +86,7 @@ Regression is a technique used to predict the value of response (dependent) vari
 Most commonly used regressions techniques are linear regression and logistic regression. We will discuss the theory behind these two prominent techniques alongside explaining many other key concepts like gradient descent algorithm, overfit and underfit, error analysis, regularization, hyperparameters and cross-validation techniques involved in machine learning.
 
 Linear Regression
-In linear regression problems, the goal is to predict a real-value variable y from a given pattern X. In the case of linear regression the output is a linear function of the input. Let ŷ be the output our model predicts: ŷ = WX+b
+In linear regression problems, the goal is to predict a real-value variable y from a given pattern X. In the case of linear regression the output is a linear function of the input. Let ŷ be the output our model predicts: ŷ = WX+b
 
 Here X is a vector or features of an example, W are the weights or vector of parameters that determine how each feature affects the prediction, and b is a bias term. So, our task T is to predict y from X. Now ,we need to measure performance P to know how well the model performs.
 
@@ -119,22 +124,22 @@ The gradient of the cost function is calculated as a partial derivative of cost 
 There are three ways of doing gradient descent:
 
 Batch gradient descent: Uses all of the training instances to update the model parameters in each iteration.
-Mini-batch gradient descent: Instead of using all examples, mini-batch gradient descent divides the training set into a smaller size called batch denoted by ‘b’. Thus a mini-batch ‘b’ is used to update the model parameters in each iteration.
+Mini-batch gradient descent: Instead of using all examples, mini-batch gradient descent divides the training set into a smaller size called batch denoted by 'b'. Thus a mini-batch 'b' is used to update the model parameters in each iteration.
 Stochastic gradient descent (SGD): This updates the parameters using only a single training instance in each iteration. The training instance is usually selected randomly. Stochastic gradient descent is often preferred to optimize cost functions when there are hundreds of thousands of training instances or more, as it will converge more quickly than batch gradient descent.
 Logistic Regression
-In some problems the response variable isn’t normally distributed. For instance, a coin toss can result in two outcomes: heads or tails. The Bernoulli distribution describes the probability distribution of a random variable that can take the positive case with probability P or the negative case with probability 1-P. If the response variable represents a probability, it must be constrained to the range {0,1}.
+In some problems the response variable isn't normally distributed. For instance, a coin toss can result in two outcomes: heads or tails. The Bernoulli distribution describes the probability distribution of a random variable that can take the positive case with probability P or the negative case with probability 1-P. If the response variable represents a probability, it must be constrained to the range {0,1}.
 
 In logistic regression, the response variable describes the probability that the outcome is the positive case. If the response variable is equal to or exceeds a discrimination threshold, the positive class is predicted. Otherwise, the negative class is predicted.
 
 The response variable is modeled as a function of a linear combination of the input variables using the logistic function.
 
-Since our hypotheses ŷ has to satisfy 0 ≤ ŷ ≤ 1, this can be accomplished by plugging logistic function or sigmoid function:
+Since our hypotheses ŷ has to satisfy 0 ≤ ŷ ≤ 1, this can be accomplished by plugging logistic function or sigmoid function:
 
 Sigmoid function equation
 Sigmoid function equation. | Image: Javaid Nabi
 The function g(z) maps any real number to the (0, 1) interval, making it useful for transforming an arbitrary-valued function into a function better suited for classification.
 
-Now, coming back to our logistic regression problem, let’s assume that z is a linear function of a single explanatory variable x. We can then express z as follows:
+Now, coming back to our logistic regression problem, let's assume that z is a linear function of a single explanatory variable x. We can then express z as follows:
 
 Z equation for linear function.
 Z equation for linear function. | Image: Javaid Nabi
@@ -142,9 +147,9 @@ And the logistic function can now be written as:
 
 Logistic function.
 Logistic function. | Image: Javaid Nabi
-g(x) is interpreted as the probability of the dependent variable. g(x) = 0.7, gives us a probability of 70 percent that our output is one. Our probability that our prediction is zero is just the complement of our probability that it is one. For example, if the probability that it’s one is 70 percent, then the probability that it is zero is 30 percent.
+g(x) is interpreted as the probability of the dependent variable. g(x) = 0.7, gives us a probability of 70 percent that our output is one. Our probability that our prediction is zero is just the complement of our probability that it is one. For example, if the probability that it's one is 70 percent, then the probability that it is zero is 30 percent.
 
-The input to the sigmoid function g doesn’t need to be a linear function. It can be a circle or any shape.
+The input to the sigmoid function g doesn't need to be a linear function. It can be a circle or any shape.
 
 Linear function
 Linear function. | Image: Javaid Nabi
@@ -170,21 +175,21 @@ Since the cost function is a convex function, we can run the gradient descent al
  
 
 What Is Underfitting and Overfitting in Machine Learning?
-We try to make the machine learning algorithm fit the input data by increasing or decreasing the model’s capacity. In linear regression problems, we increase or decrease the degree of the polynomials.
+We try to make the machine learning algorithm fit the input data by increasing or decreasing the model's capacity. In linear regression problems, we increase or decrease the degree of the polynomials.
 
-Consider the problem of predicting y from x ∈ R. Since the data doesn’t lie in a straight line, the fit is not very good.
+Consider the problem of predicting y from x ∈ R. Since the data doesn't lie in a straight line, the fit is not very good.
 
 To increase model capacity, we add another feature by adding the term x² to it. This produces a better fit. But if we keep on doing so x⁵, fifth order polynomial), we may be able to better fit the data but it will not generalize well for new data.
 
 Underfitting
-When the model has fewer features, it isn’t able to learn from the data very well — known as underfitting. This means the model has a high bias.
+When the model has fewer features, it isn't able to learn from the data very well — known as underfitting. This means the model has a high bias.
 
 Overfitting
-When the model has complex functions, it’s able to fit the data but is not able to generalize to predict new data — known as overfitting. This model has high variance. There are three main options to address the issue of overfitting:
+When the model has complex functions, it's able to fit the data but is not able to generalize to predict new data — known as overfitting. This model has high variance. There are three main options to address the issue of overfitting:
 
 Reduce the number of features: Manually select which features to keep. We may miss some important information if we throw away features.
 Regularization: Keep all the features, but reduce the magnitude of weights W. Regularization works well when we have a lot of slightly useful features.
-Early stopping: When we are training a learning algorithm iteratively such as using gradient descent, we can measure how well each iteration of the model performs. Up to a certain number of iterations, each iteration improves the model. After that point, however, the model’s ability to generalize can weaken as it begins to overfit the training data.
+Early stopping: When we are training a learning algorithm iteratively such as using gradient descent, we can measure how well each iteration of the model performs. Up to a certain number of iterations, each iteration improves the model. After that point, however, the model's ability to generalize can weaken as it begins to overfit the training data.
  
 
 Regularization in Machine Learning
@@ -254,7 +259,7 @@ The overall data set is divided into three categories:
 Training data set
 Validation data set
 Test data set
-The training set is used to fit the different models, and the performance on the validation set is then used for the model selection. The advantage of keeping a test set that the model hasn’t seen before during the training and model selection steps is to avoid overfitting the model. The model is able to better generalize to unseen data.
+The training set is used to fit the different models, and the performance on the validation set is then used for the model selection. The advantage of keeping a test set that the model hasn't seen before during the training and model selection steps is to avoid overfitting the model. The model is able to better generalize to unseen data.
 
 In many applications, however, the supply of data for training and testing will be limited, and in order to build good models, we wish to use as much of the available data as possible for training. However, if the validation set is small, it will give a relatively noisy estimate of predictive performance. One solution to this dilemma is to use cross-validation.
 
@@ -266,7 +271,7 @@ Understanding Feature Importance in Machine Learning
 7 Steps of Cross-Validation
 These are the steps for selecting hyper-parameters using K-fold cross-validation:
 
-Split your training data into K = 4 equal parts, or “folds.”
+Split your training data into K = 4 equal parts, or "folds."
 Choose a set of hyperparameters you wish to optimize.
 Train your model with that set of hyperparameters on the first three folds.
 Evaluate it on the fourth fold, or the hold-out fold.
@@ -275,11 +280,11 @@ Aggregate the performance across all four folds. This is your performance metric
 Repeat steps (2) to (6) for all sets of hyperparameters you wish to consider.
 Cross-validation allows us to tune hyperparameters with only our training set. This allows us to keep the test set as a truly unseen data set for selecting the final model.
 
-We’ve covered some of the key concepts in the field of machine learning, starting with the definition of machine learning and then covering different types of machine learning techniques. We discussed the theory behind the most common regression techniques (linear and logistic) alongside other key concepts of machine learning.
+We've covered some of the key concepts in the field of machine learning, starting with the definition of machine learning and then covering different types of machine learning techniques. We discussed the theory behind the most common regression techniques (linear and logistic) alongside other key concepts of machine learning.
 
 Frequently Asked Questions
 What is the difference between AI and ML?
-Artificial intelligence (AI) is a branch of computer science dedicated to building machines that can emulate human intelligence and reasoning, performing tasks like learning, problem-solving and decision-making. Machine learning (ML) is a subfield of AI that focuses on enabling machines to “learn” from data and improve their performance on specific tasks over time, without being explicitly programmed at each step.
+Artificial intelligence (AI) is a branch of computer science dedicated to building machines that can emulate human intelligence and reasoning, performing tasks like learning, problem-solving and decision-making. Machine learning (ML) is a subfield of AI that focuses on enabling machines to "learn" from data and improve their performance on specific tasks over time, without being explicitly programmed at each step.
 
 What are the 4 types of machine learning?
 The 4 types of machine learning are:
@@ -294,8 +299,8 @@ Machine learning uses various techniques to enable a machine to learn a task, of
 Recent Artificial Intelligence Articles
 Here Are the 44 Most Disruptive Leaders in the Artificial Intelligence Industry
 Here Are the 44 Most Disruptive Leaders in the Artificial Intelligence Industry
-How Edge Computing Can Solve AI’s Energy Crisis
-How Edge Computing Can Solve AI’s Energy Crisis
+How Edge Computing Can Solve AI's Energy Crisis
+How Edge Computing Can Solve AI's Energy Crisis
 What Is Model Deployment in Machine Learning?
 What Is Model Deployment in Machine Learning?
 BuiltIn
@@ -326,7 +331,7 @@ Your Privacy Choices/Cookie Settings
 CA Notice of Collection
 © Built In 2025
 `;
-export async function generateFlashcards(text) {
+export async function generateFlashcards(text, userPreference, numFlashcards) {
   // Get the latest API key from storage
   return new Promise((resolve, reject) => {
     chrome.storage.sync.get(["apiKey"], async function (result) {
@@ -335,7 +340,10 @@ export async function generateFlashcards(text) {
       }
 
       const prompt = `
-      Create 10 flashcards based on the following article. Only include facts, definitions, or concepts that would help someone understand or study the topic. Your output should imitate a CSV file where each row is a flashcard in the following format: Question, Answer.
+      Create ${numFlashcards} flashcards based on the following article. Only include facts, definitions, or concepts that would help someone understand or study the topic. ${
+        userPreference ? userPreference : ""
+      }
+      Your output should imitate a CSV file where each row is a flashcard in the following format: Question, Answer.
       Article:
       \n\n${text}
       `;
@@ -388,3 +396,16 @@ export async function generateFlashcards(text) {
     });
   });
 }
+
+const rl = readline.createInterface({
+  input,
+  output,
+});
+
+rl.question(
+  "Enter your preference for the flashcards (e.g., 'I want my flashcards to be detailed'): ",
+  (userPreference) => {
+    generateFlashcards(inputText, userPreference, numFlashcards);
+    rl.close();
+  }
+);
