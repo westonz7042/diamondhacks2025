@@ -8,9 +8,6 @@ function getEndpoint() {
   return `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
 }
 
-import readline from "node:readline";
-import { stdin as input, stdout as output } from "node:process";
-
 const numFlashcards = 5;
 
 const inputText = `Built In Logo
@@ -396,16 +393,3 @@ export async function generateFlashcards(text, userPreference, numFlashcards) {
     });
   });
 }
-
-const rl = readline.createInterface({
-  input,
-  output,
-});
-
-rl.question(
-  "Enter your preference for the flashcards (e.g., 'I want my flashcards to be detailed'): ",
-  (userPreference) => {
-    generateFlashcards(inputText, userPreference, numFlashcards);
-    rl.close();
-  }
-);
