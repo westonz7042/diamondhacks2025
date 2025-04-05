@@ -2,7 +2,7 @@
 
 //require("dotenv").config();
 //const fs = require("fs");
-const API_KEY = "Enter_API_key_here";
+const API_KEY = "Enter API Key";
 const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
 const inputText = `Built In Logo
 Jobs
@@ -355,20 +355,20 @@ export async function generateFlashcards(text) {
       return;
     }
     const lines = csvOutput.trim().split("\n");
-    if (
+
+    //console.log("Lines", lines);
+    while (
       lines[0].toLowerCase().includes("question") &&
       lines[0].toLowerCase().includes("answer")
     ) {
       lines.shift();
     }
     const csvOutput2 = lines.join("\n");
-    console.log(csvOutput2);
 
-    fs.writeFileSync("flashcards.csv", csvOutput2.trim());
-    console.log("✅ Flashcards saved to flashcards.csv");
+    //fs.writeFileSync("flashcards.csv", csvOutput2.trim());
+    //console.log("✅ Flashcards saved to flashcards.csv");
+    return csvOutput2;
   } catch (error) {
     console.error("Request failed:", error);
   }
 }
-
-generateFlashcardsCSV(inputText);

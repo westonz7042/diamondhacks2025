@@ -1,6 +1,6 @@
 // popup.js
 
-import { generateFlashcards, exportFlashcardsToCSV } from "./flashcard.js";
+import { generateFlashcards } from "./flashcard.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("extract").addEventListener("click", extractContent);
@@ -39,7 +39,7 @@ async function extractContent() {
             // Display the extracted content
             resultElement.innerHTML = `
                 <h4>${response.title || "Extracted Content"}</h4>
-                <div>${exportFlashcardsToCSV(flashcards)}</div>`;
+                <div>${flashcards}</div>`;
           })
           .catch((error) => {
             console.log(error);
