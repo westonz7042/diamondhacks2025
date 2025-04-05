@@ -3,6 +3,19 @@
 import { generateFlashcards } from "./flashcard.js";
 
 document.addEventListener("DOMContentLoaded", () => {
+  // Load saved API key if exists
+  chrome.storage.sync.get(['apiKey'], function(result) {
+    if (result.apiKey) {
+      document.getElementById("api-key").value = result.apiKey;
+    }
+  });
+  
+  // Save API key when it changes
+  document.getElementById("api-key").addEventListener("change", function() {
+    const apiKey = document.getElementById("api-key").value.trim();
+    chrome.storage.sync.set({apiKey: apiKey});
+  });
+  
   document.getElementById("extract").addEventListener("click", extractContent);
 });
 
@@ -18,9 +31,12 @@ async function extractContent() {
       currentWindow: true,
     });
 
+    // Get API key from input
+    const apiKey = document.getElementById("api-key").value.trim();
+    
     // Send message to the background script to handle content extraction
     chrome.runtime.sendMessage(
-      { action: "extract", tabId: tab.id },
+      { action: "extract", tabId: tab.id, apiKey: apiKey },
       (response) => {
         if (chrome.runtime.lastError) {
           resultElement.innerHTML = `<p>Error: ${chrome.runtime.lastError.message}</p>`;
@@ -43,6 +59,7 @@ async function extractContent() {
           })
           .catch((error) => {
             console.log(error);
+            resultElement.innerHTML = `<p>Error generating flashcards: ${error}</p>`;
           });
 
         // Save to clipboard
