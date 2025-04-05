@@ -4,18 +4,18 @@ import { generateFlashcards } from "./flashcard.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   // Load saved API key if exists
-  chrome.storage.sync.get(['apiKey'], function(result) {
+  chrome.storage.sync.get(["apiKey"], function (result) {
     if (result.apiKey) {
       document.getElementById("api-key").value = result.apiKey;
     }
   });
-  
+
   // Save API key when it changes
-  document.getElementById("api-key").addEventListener("change", function() {
+  document.getElementById("api-key").addEventListener("change", function () {
     const apiKey = document.getElementById("api-key").value.trim();
-    chrome.storage.sync.set({apiKey: apiKey});
+    chrome.storage.sync.set({ apiKey: apiKey });
   });
-  
+
   document.getElementById("extract").addEventListener("click", extractContent);
 });
 
@@ -33,7 +33,7 @@ async function extractContent() {
 
     // Get API key from input
     const apiKey = document.getElementById("api-key").value.trim();
-    
+
     // Send message to the background script to handle content extraction
     chrome.runtime.sendMessage(
       { action: "extract", tabId: tab.id, apiKey: apiKey },
@@ -52,10 +52,22 @@ async function extractContent() {
 
         generateFlashcards(response.content)
           .then((flashcards) => {
+            const blob = new Blob([flashcards], { type: "text/csv" });
+            const url = URL.createObjectURL(blob);
+            const downloadLink = document.createElement("a");
+            const sanitizedTitle = response.title
+              ? response.title.replace(/[^\w\s]/gi, "")
+              : "flashcards";
+            downloadLink.download = `${sanitizedTitle}_flashcards.csv`;
+            downloadLink.href = url;
+            downloadLink.textContent = "Download Flashcards as CSV";
+            downloadLink.style.display = "block";
+            downloadLink.style.marginTop = "10px";
             // Display the extracted content
             resultElement.innerHTML = `
                 <h4>${response.title || "Extracted Content"}</h4>
                 <div>${flashcards}</div>`;
+            resultElement.appendChild(downloadLink);
           })
           .catch((error) => {
             console.log(error);
@@ -63,11 +75,9 @@ async function extractContent() {
           });
 
         // Save to clipboard
-        navigator.clipboard
-          .writeText(response.content)
-          .catch((err) => {
-            console.error("Could not copy text: ", err);
-          });
+        navigator.clipboard.writeText(response.content).catch((err) => {
+          console.error("Could not copy text: ", err);
+        });
       }
     );
   } catch (error) {
