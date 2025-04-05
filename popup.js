@@ -22,9 +22,9 @@ document.addEventListener("DOMContentLoaded", () => {
 async function extractContent() {
   try {
     // Show loading state
-    const resultElement = document.getElementById("result");
-    resultElement.innerHTML = "<p>Extracting content...</p>";
-
+    const resultElement = document.getElementById('result');
+    resultElement.innerHTML = '<p>Extracting and cleaning content...</p>';
+    
     // Get the active tab
     const [tab] = await chrome.tabs.query({
       active: true,
@@ -34,7 +34,7 @@ async function extractContent() {
     // Get API key from input
     const apiKey = document.getElementById("api-key").value.trim();
     
-    // Send message to the background script to handle content extraction
+    // Send message to the background script to handle content extraction and cleanup
     chrome.runtime.sendMessage(
       { action: "extract", tabId: tab.id, apiKey: apiKey },
       (response) => {
@@ -49,25 +49,22 @@ async function extractContent() {
           }</p>`;
           return;
         }
-
+        
+        // Generate flashcards from the cleaned content
         generateFlashcards(response.content)
           .then((flashcards) => {
-            // Display the extracted content
+            // Display the flashcards
             resultElement.innerHTML = `
-                <h4>${response.title || "Extracted Content"}</h4>
-                <div>${flashcards}</div>`;
+              <h4>${response.title || "Extracted Content"}</h4>
+              <div>${flashcards}</div>`;
           })
           .catch((error) => {
             console.log(error);
             resultElement.innerHTML = `<p>Error generating flashcards: ${error}</p>`;
           });
-
-        // Save to clipboard
-        navigator.clipboard
-          .writeText(response.content)
-          .catch((err) => {
-            console.error("Could not copy text: ", err);
-          });
+        
+        // Print cleaned content to console instead of copying to clipboard
+        console.log("Cleaned content:", response.content);
       }
     );
   } catch (error) {
