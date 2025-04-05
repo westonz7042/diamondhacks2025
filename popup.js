@@ -65,10 +65,6 @@ async function extractContent() {
         // Save to clipboard
         navigator.clipboard
           .writeText(response.content)
-          .then(() => {
-            document.getElementById("clipboard-status").textContent =
-              "Content copied to clipboard!";
-          })
           .catch((err) => {
             console.error("Could not copy text: ", err);
           });
