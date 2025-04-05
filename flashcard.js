@@ -1,6 +1,8 @@
-require("dotenv").config();
-const fs = require("fs");
-const API_KEY = process.env.API_KEY;
+//flashcard.js
+
+//require("dotenv").config();
+//const fs = require("fs");
+const API_KEY = "Enter_API_key_here";
 const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
 const inputText = `Despite throwing a wild card at BDS, Rogue’s plans were thwarted during the first weekend of the League of Legends EMEA Championship (LEC) Spring Season. With another tough start, the team now faces the challenge of proving its critics wrong and avoiding the mistakes of recent splits, having finished in 9th or 10th place in the last four. In an exclusive interview with Sheep Esports, midlaner and captain Emil "Larssen" Larsson discusses the team’s cold streak, areas for improvement, his grind to Challenger, and his relationship with social media and critics.
 
@@ -21,7 +23,7 @@ Next week, you'll be facing Vitality and GIANTX. GX isn’t looking great right 
 Larssen: Definitely. I think these first two weeks are extremely important for us because we're playing against opponents from the bottom tier teams. That's why it feels so hard right now. But I think next week is very winnable, and we need to win. It's tough... I'm still replaying that BDS game in my mind right now.
 
 `;
-async function generateFlashcards(text) {
+export async function generateFlashcards(text) {
   const prompt = `
     Based on the following material, create a set of flashcards in this format:
   
@@ -86,15 +88,15 @@ function parseFlashcards(text) {
   return flashcards;
 }
 
-function exportFlashcardsToCSV(flashcards) {
+export function exportFlashcardsToCSV(flashcards) {
   const rows = flashcards.map((card) => `"${card.question}","${card.answer}"`);
   return rows.join("\n");
 }
 
-(async () => {
+/*(async () => {
   const flashcards = await generateFlashcards(inputText);
   const csv = exportFlashcardsToCSV(flashcards);
 
   fs.writeFileSync("flashcards.csv", csv);
   console.log("✅ Flashcards saved to flashcards.csv");
-})();
+})();*/
