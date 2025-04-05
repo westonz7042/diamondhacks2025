@@ -1,0 +1,21 @@
+{
+  "name": "Test Extension",
+  "description": "Base Level Extension",
+  "version": "1.0",
+  "manifest_version": 3,
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "persistent": false,
+    "scripts": ["background.js"]
+  },
+  "content_scripts": [
+    {
+      "js": ["content.js"]
+    }
+  ],
+  "browser_action": {
+    "default_title": "Test Extension"
+  }
+}
