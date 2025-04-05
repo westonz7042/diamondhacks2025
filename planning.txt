@@ -1,0 +1,17 @@
+chome extension that saves articles you want to remember into anki decks that you can download
+
+
+
+workflow:
+
+click on the extension icon if you want to save this website
+-> 
+extract text from the article through trafilatura or other javascript thing
+->
+send the text of article + a prompt to gemini telling it to create anki cards for this website
+-> 
+have a downloadable .apkg file with ~3-20 anki cards from the content on the website
+
+
+
+
