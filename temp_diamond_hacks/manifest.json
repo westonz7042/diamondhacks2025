@@ -1,8 +1,8 @@
 {
-  "name": "Anki Card Creator",
-  "description": "Extracts text from articles and creates Anki cards",
-  "version": "1.0",
   "manifest_version": 3,
+  "name": "WebText Extractor",
+  "version": "1.0",
+  "description": "Extract main content from websites using Readability.js",
   "permissions": [
     "activeTab",
     "scripting",
@@ -16,11 +16,5 @@
   },
   "background": {
     "service_worker": "background.js"
-  },
-  "content_scripts": [
-    {
-      "js": ["content.js"],
-      "matches": ["<all_urls>"]
-    }
-  ]
+  }
 }
