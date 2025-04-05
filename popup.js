@@ -23,7 +23,7 @@ async function extractContent() {
   try {
     // Show loading state
     const resultElement = document.getElementById("result");
-    resultElement.innerHTML = "<p>Extracting content...</p>";
+    resultElement.innerHTML = "<p>Extracting and cleaning content...</p>";
 
     // Get the active tab
     const [tab] = await chrome.tabs.query({
@@ -50,6 +50,7 @@ async function extractContent() {
           return;
         }
 
+        // Generate flashcards from the cleaned content
         generateFlashcards(response.content)
           .then((flashcards) => {
             const blob = new Blob([flashcards], { type: "text/csv" });

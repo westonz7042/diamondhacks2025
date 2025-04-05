@@ -6,7 +6,7 @@ workflow:
 
 click on the extension icon if you want to save this website
 -> 
-extract text from the article through trafilatura or other javascript thing
+extract text from the article through readability.js
 ->
 send the text of article + a prompt to gemini telling it to create anki cards for this website
 -> 
