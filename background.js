@@ -8,13 +8,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "extract") {
     console.log("Extraction requested for tab:", request.tabId);
     
+    // Store API key for use by other parts of the extension
+    if (request.apiKey) {
+      chrome.storage.sync.set({apiKey: request.apiKey});
+    }
+    
     // Execute content script
     chrome.scripting.executeScript({
       target: { tabId: request.tabId },
       files: ["readability.js", "content.js"]
     }).then(() => {
       // Now that the content script is injected, send a message to it
-      chrome.tabs.sendMessage(request.tabId, { action: "extractContent" }, (response) => {
+      chrome.tabs.sendMessage(request.tabId, { 
+        action: "extractContent",
+        apiKey: request.apiKey 
+      }, (response) => {
         console.log("Got response from content script:", response);
         sendResponse(response);
       });

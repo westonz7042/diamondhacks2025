@@ -2,8 +2,12 @@
 
 //require("dotenv").config();
 //const fs = require("fs");
-const API_KEY = "AIzaSyDu2BsZ_nzDi6AaO_yBnL0SMpZDxSWd0TM";
-const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
+let API_KEY = "";
+
+// Function to create the endpoint URL with the latest API key
+function getEndpoint() {
+  return `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
+}
 const inputText = `Built In Logo
 Jobs
 Companies
@@ -323,52 +327,64 @@ CA Notice of Collection
 © Built In 2025
 `;
 export async function generateFlashcards(text) {
-  const prompt = `
-  Create 10 flashcards based on the following article. Only include facts, definitions, or concepts that would help someone understand or study the topic. Your output should imitate a CSV file where each row is a flashcard in the following format: Question, Answer.
-  Article:
-  \n\n${text}
-  `;
+  // Get the latest API key from storage
+  return new Promise((resolve, reject) => {
+    chrome.storage.sync.get(["apiKey"], async function (result) {
+      if (result.apiKey) {
+        API_KEY = result.apiKey;
+      }
 
-  try {
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [{ text: prompt }],
-          },
-        ],
-      }),
+      const prompt = `
+      Create 10 flashcards based on the following article. Only include facts, definitions, or concepts that would help someone understand or study the topic. Your output should imitate a CSV file where each row is a flashcard in the following format: Question, Answer.
+      Article:
+      \n\n${text}
+      `;
+
+      try {
+        const response = await fetch(getEndpoint(), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [{ text: prompt }],
+              },
+            ],
+          }),
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+          console.error("API Error:", data.error.message);
+          reject(data.error.message);
+          return;
+        }
+
+        const csvOutput = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!csvOutput) {
+          console.error("No flashcard content returned.");
+          reject("No flashcard content returned");
+          return;
+        }
+        const lines = csvOutput.trim().split("\n");
+
+        //console.log("Lines", lines);
+        while (
+          lines[0].toLowerCase().includes("question") &&
+          lines[0].toLowerCase().includes("answer")
+        ) {
+          lines.shift();
+        }
+        const csvOutput2 = lines.join("\n");
+
+        //fs.writeFileSync("flashcards.csv", csvOutput2.trim());
+        //console.log("✅ Flashcards saved to flashcards.csv");
+        resolve(csvOutput2);
+      } catch (error) {
+        console.error("Request failed:", error);
+        reject(error);
+      }
     });
-
-    const data = await response.json();
-
-    if (data.error) {
-      console.error("API Error:", data.error.message);
-      return;
-    }
-
-    const csvOutput = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!csvOutput) {
-      console.error("No flashcard content returned.");
-      return;
-    }
-    const lines = csvOutput.trim().split("\n");
-
-    //console.log("Lines", lines);
-    while (
-      lines[0].toLowerCase().includes("question") &&
-      lines[0].toLowerCase().includes("answer")
-    ) {
-      lines.shift();
-    }
-    const csvOutput2 = lines.join("\n");
-
-    //fs.writeFileSync("flashcards.csv", csvOutput2.trim());
-    //console.log("✅ Flashcards saved to flashcards.csv");
-    return csvOutput2;
-  } catch (error) {
-    console.error("Request failed:", error);
-  }
+  });
 }

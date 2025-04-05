@@ -1,10 +1,22 @@
-require("dotenv").config();
-const API_KEY = process.env.API_KEY;
-const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
+// Get API key from Chrome storage
+let API_KEY = "";
+
+// Function to create the endpoint URL with the latest API key
+function getEndpoint() {
+  return `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
+}
+
 const articleText = `text`;
 async function summarizeArticle(text) {
+  // Get the latest API key from storage
+  chrome.storage.sync.get(['apiKey'], function(result) {
+    if (result.apiKey) {
+      API_KEY = result.apiKey;
+    }
+  });
+  
   try {
-    const response = await fetch(endpoint, {
+    const response = await fetch(getEndpoint(), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
