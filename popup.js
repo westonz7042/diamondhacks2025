@@ -1,4 +1,7 @@
 // popup.js
+
+import { generateFlashcards } from "./flashcard.js";
+
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("extract").addEventListener("click", extractContent);
 });
@@ -31,11 +34,16 @@ async function extractContent() {
           return;
         }
 
-        // Display the extracted content
-        resultElement.innerHTML = `
-          <h4>${response.title || "Extracted Content"}</h4>
-          <div>${response.content}</div>
-        `;
+        generateFlashcards(response.content)
+          .then((flashcards) => {
+            // Display the extracted content
+            resultElement.innerHTML = `
+                <h4>${response.title || "Extracted Content"}</h4>
+                <div>${flashcards}</div>`;
+          })
+          .catch((error) => {
+            console.log(error);
+          });
 
         // Save to clipboard
         navigator.clipboard
