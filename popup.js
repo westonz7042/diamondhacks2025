@@ -124,11 +124,10 @@ async function extractContent() {
         // Generate flashcards from the cleaned content
         generateFlashcards(response.content, pref, numCards)
           .then((flashcardsArray) => {
+            // resultElement.innerHTML = `</h4><h4>${flashcardsArray}</h4>`;
             // Convert to CSV string for download
             // let x = JSON.parse(flashcardsArray);
             let trimmedArray = flashcardsArray.trim().replace(/^```|```$/g, "");
-            //       resultElement.innerHTML = `
-            // <h4>${trimmedArray}</h4>`;
             let jsonArray = JSON.parse(trimmedArray);
             const csvContent = jsonArray
               .map(({ front, back }) => {

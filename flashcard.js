@@ -19,6 +19,7 @@ export async function generateFlashcards(text, userPreference, numFlashcards) {
       }
 
       const prompt = `
+      Output MUST be an array of json objects with the format: "front":question, "back":answer. Do not include the word json at the start of the output for labeling. I understand it is helpful, but you MUST not include it, the word json at the beginning.
       Create ${numFlashcards} high-quality flashcards based on the following article. Follow these essential guidelines:
       
       • Each card must focus on ONE specific concept (atomic knowledge)
@@ -36,11 +37,11 @@ export async function generateFlashcards(text, userPreference, numFlashcards) {
       
       ${userPreference ? userPreference : ""}
       
-      Your output must be in CSV format with each row as: Question,Answer
-      Do not include headers or file type information.
+      
       
       Article:
       \n\n${text}
+      
       `;
 
       try {
