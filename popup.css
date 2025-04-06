@@ -161,6 +161,10 @@ h3 {
   border: 1px solid #fff;
 }
 
+.tab:hover + .tab-label {
+  color: #fff;
+}
+
 .flashcard-container {
   margin-top: 20px;
   width: 90%;
@@ -225,30 +229,30 @@ h3 {
   background-color: #6c54e6;
 }
 .anki-button {
-    display: inline-block;
-    padding: 10px 16px;
-    background-color: #28a745;
-    color: white;
-    text-align: center;
-    text-decoration: none;
-    border-radius: 8px;
-    font-weight: bold;
-    font-size: 0.95rem;
-    margin-top: 16px;
-    margin-left: 10px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    transition: background-color 0.2s ease;
-    border: none;
-    cursor: pointer;
-  }
-  
-  .anki-button:hover {
-    background-color: #218838;
-  }
-  
-  .button-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-top: 16px;
-  }
+  display: inline-block;
+  padding: 10px 16px;
+  background-color: #28a745;
+  color: white;
+  text-align: center;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 0.95rem;
+  margin-top: 16px;
+  margin-left: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.2s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.anki-button:hover {
+  background-color: #218838;
+}
+
+.button-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 16px;
+}
