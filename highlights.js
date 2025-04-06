@@ -353,11 +353,25 @@ export async function generateFromHighlights() {
 
               // Display the extracted content with website info
               const displayTitle = `Flashcards from ${currentWebsite}`;
+              
+              // Create button container
+              const buttonContainer = document.createElement("div");
+              buttonContainer.className = "button-container";
+              
+              // Create "Send to Anki" button
+              const ankiButton = document.createElement("button");
+              ankiButton.textContent = "Send to Anki";
+              ankiButton.className = "anki-button";
+              ankiButton.onclick = () => window.sendToAnki(jsonArray, displayTitle);
+              
+              // Add buttons to container
+              buttonContainer.appendChild(downloadLink);
+              buttonContainer.appendChild(ankiButton);
 
               resultElement.innerHTML = `
               <h2 style="text-align: center;" >${displayTitle}</h2>
             `;
-              resultElement.appendChild(downloadLink);
+              resultElement.appendChild(buttonContainer);
               displayQuizletFlashcards(jsonArray);
             } catch (error) {
               console.error("Error generating flashcards:", error);
