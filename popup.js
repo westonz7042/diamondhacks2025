@@ -43,7 +43,7 @@ style.textContent = `
 document.head.appendChild(style);
 
 import { generateFlashcards } from "./flashcard.js";
-
+import { summarizeArticle } from "./summary.js";
 document.addEventListener("DOMContentLoaded", () => {
   // Load saved API key if exists
   chrome.storage.sync.get(["apiKey"], function (result) {
@@ -59,7 +59,9 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   document.getElementById("extract").addEventListener("click", extractContent);
-
+  document
+    .getElementById("summarize")
+    .addEventListener("click", summarizeContent);
   // prompts
   document.getElementById("pref").addEventListener("change", function () {
     const pref = document.getElementById("pref").value.trim();
@@ -73,24 +75,25 @@ document.addEventListener("DOMContentLoaded", () => {
       ? "text"
       : "password";
   });
-  
+
   // Load preferences from storage
-  chrome.storage.sync.get(["pref", "numCards"], function(result) {
+  chrome.storage.sync.get(["pref"], function (result) {
     if (result.pref) {
       document.getElementById("pref").value = result.pref;
     }
-    if (result.numCards) {
-      document.getElementById("num-cards").value = result.numCards;
-    }
   });
-  
+
   // Load saved highlights and display them
   loadSavedHighlights();
-  
+
   // Add event listeners for the highlights section
   document.getElementById("extract").addEventListener("click", extractContent);
-  document.getElementById("clear-highlights").addEventListener("click", clearAllHighlights);
-  document.getElementById("generate-from-highlights").addEventListener("click", generateFromHighlights);
+  document
+    .getElementById("clear-highlights")
+    .addEventListener("click", clearAllHighlights);
+  document
+    .getElementById("generate-from-highlights")
+    .addEventListener("click", generateFromHighlights);
 });
 
 // Function to load and display saved highlights
@@ -134,7 +137,7 @@ function loadSavedHighlights() {
 function displayCurrentSiteHighlights(highlights, currentHostname) {
   const highlightsSection = document.getElementById("saved-highlights-section");
   const highlightsList = document.getElementById("highlights-list");
-  
+
   // Clear existing content
   highlightsList.innerHTML = '';
   
@@ -183,10 +186,11 @@ function displayCurrentSiteHighlights(highlights, currentHostname) {
       highlightItem.style.position = 'relative';
       
       // Create text content with truncation if needed
-      const contentText = highlight.content.length > 100 
-        ? highlight.content.substring(0, 100) + '...' 
-        : highlight.content;
-      
+      const contentText =
+        highlight.content.length > 100
+          ? highlight.content.substring(0, 100) + "..."
+          : highlight.content;
+
       highlightItem.innerHTML = `
         <div style="margin-right: 20px;">${contentText}</div>
         <button class="remove-highlight" data-id="${highlight.id}" style="
@@ -201,14 +205,14 @@ function displayCurrentSiteHighlights(highlights, currentHostname) {
           padding: 0;
           width: auto;">×</button>
       `;
-      
+
       // Add click handler for remove button
-      const removeButton = highlightItem.querySelector('.remove-highlight');
-      removeButton.addEventListener('click', function(e) {
+      const removeButton = highlightItem.querySelector(".remove-highlight");
+      removeButton.addEventListener("click", function (e) {
         e.stopPropagation();
         removeHighlight(highlight.id);
       });
-      
+
       highlightsList.appendChild(highlightItem);
     });
   } else {
@@ -262,25 +266,25 @@ async function generateFromHighlights() {
   try {
     // Show loading state
     const resultElement = document.getElementById("result");
+    resultElement.style.display = "flex";
     resultElement.innerHTML = "<p>Generating flashcards from highlights...</p>";
-    
+
     // Get the active tab
     const [tab] = await chrome.tabs.query({
       active: true,
       currentWindow: true,
     });
-    
+
     // Get API key from input
     const apiKey = document.getElementById("api-key").value.trim();
-    
+
     if (!apiKey) {
       resultElement.innerHTML = "<p>Error: Please enter your API key</p>";
       return;
     }
-    
+
     // Get user preferences
     const pref = document.getElementById("pref").value.trim();
-    const numCards = document.getElementById("num-cards").value.trim();
     
     // Get the current website hostname from the hidden field
     const currentWebsite = document.getElementById('website-filter-value')?.value;
@@ -334,7 +338,7 @@ async function generateFromHighlights() {
           // Build the prompt with both highlights and article context
           const specialPrompt = `
           For this task, I'm providing you with HIGHLIGHTED TEXT passages${websiteInfo}.
-          Generate ${numCards} high-quality flashcards focusing SPECIFICALLY on the highlighted passages.
+          Generate one high-quality flashcard focusing SPECIFICALLY on each of the highlighted passages.
           Use the full article for context to create better cards.
           
           ${pref ? `User preferences: ${pref}` : ''}
@@ -347,7 +351,7 @@ async function generateFromHighlights() {
           `;
           
           // Generate the flashcards from the data
-          const flashcardsData = await generateFlashcards(specialPrompt, null, numCards);
+          const flashcardsData = await generateFlashcards(specialPrompt, null);
           
           // Process JSON response
           let jsonArray;
@@ -399,18 +403,21 @@ async function generateFromHighlights() {
           resultElement.innerHTML = `
             <h4>${displayTitle}</h4>
           `;
-          resultElement.appendChild(downloadLink);
-          displayQuizletFlashcards(jsonArray);
-          
-        } catch (error) {
-          console.error("Error generating flashcards:", error);
-          resultElement.innerHTML = `<p>Error generating flashcards: ${error}</p>`;
-        }
-      });
-    });
+              resultElement.appendChild(downloadLink);
+              displayQuizletFlashcards(jsonArray);
+            } catch (error) {
+              console.error("Error generating flashcards:", error);
+              resultElement.innerHTML = `<p>Error generating flashcards: ${error}</p>`;
+            }
+          }
+        );
+      }
+    );
   } catch (error) {
     console.error("Error in generate from highlights:", error);
-    document.getElementById("result").innerHTML = `<p>Error: ${error.message}</p>`;
+    document.getElementById(
+      "result"
+    ).innerHTML = `<p>Error: ${error.message}</p>`;
   }
 }
 
@@ -418,9 +425,18 @@ async function extractContent() {
   try {
     // Show loading state
     const resultElement = document.getElementById("result");
+
+    resultElement.innerHTML = "";
+    resultElement.style.display = "none";
+
     resultElement.innerHTML =
       '<div class="load-div"> <div class="loader"></div> <div>Extracting and cleaning content...</div> </div>';
+    // const resultElement = document.getElementById("result");
+    const summaryElement = document.getElementById("result");
+    // summaryElement.innerHTML =
+    //   '<div class="load-div"> <div class="loader"></div> <div>Summarizing article...</div> </div>';
 
+    resultElement.style.display = "flex";
     // Get the active tab
     const [tab] = await chrome.tabs.query({
       active: true,
@@ -458,8 +474,8 @@ async function extractContent() {
           .then((flashcardsData) => {
             // Process the JSON response from generateFlashcards
             let jsonArray;
-            
-            if (typeof flashcardsData === 'string') {
+
+            if (typeof flashcardsData === "string") {
               // Handle string response (could be JSON string)
               let trimmedData = flashcardsData.trim().replace(/^```|```$/g, "");
               try {
@@ -477,7 +493,7 @@ async function extractContent() {
               resultElement.innerHTML = `<p>Error: Unexpected response format</p>`;
               return;
             }
-            
+
             // Convert JSON to CSV format
             const csvContent = jsonArray
               .map(({ front, back }) => {
@@ -526,11 +542,11 @@ async function extractContent() {
 }
 function displayQuizletFlashcards(flashcardsData) {
   let currentIndex = 0;
-  
+
   // Ensure we have a valid array of flashcard objects
   let flashcardsArray;
-  
-  if (typeof flashcardsData === 'string') {
+
+  if (typeof flashcardsData === "string") {
     try {
       // Try to parse if it's a JSON string
       let trimmedData = flashcardsData.trim().replace(/^```|```$/g, "");
@@ -545,7 +561,7 @@ function displayQuizletFlashcards(flashcardsData) {
     console.error("Invalid flashcards data format:", flashcardsData);
     return; // Exit if format is invalid
   }
-  
+
   // Check if array is empty
   if (!flashcardsArray || flashcardsArray.length === 0) {
     console.error("No flashcards to display");
@@ -606,5 +622,41 @@ function displayQuizletFlashcards(flashcardsData) {
     front.textContent = flashcardsArray[currentIndex].front;
     back.textContent = flashcardsArray[currentIndex].back;
     card.classList.remove("flipped"); // reset to front view
+  }
+}
+async function summarizeContent() {
+  const resultElement = document.getElementById("result");
+  const summaryElement = document.getElementById("result");
+  summaryElement.innerHTML =
+    '<div class="load-div"> <div class="loader"></div> <div>Summarizing article...</div> </div>';
+  resultElement.style.display = "flex";
+
+  try {
+    const [tab] = await chrome.tabs.query({
+      active: true,
+      currentWindow: true,
+    });
+
+    chrome.scripting.executeScript(
+      {
+        target: { tabId: tab.id },
+        func: () => document.body.innerText,
+      },
+      async (injectionResults) => {
+        const pageText = injectionResults?.[0]?.result;
+
+        const response = await summarizeArticle(pageText);
+
+        if (response.success) {
+          // resultElement.innerHTML = `<h4>Summary</h4><p>${response.content}</p>`;
+          summaryElement.innerHTML = `<p>${response.content}</p>`;
+        } else {
+          resultElement.innerHTML = `<p>Failed to summarize: ${response.error}</p>`;
+        }
+      }
+    );
+  } catch (err) {
+    console.error(err);
+    resultElement.innerHTML = `<p>Error: ${err.message}</p>`;
   }
 }

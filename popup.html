@@ -33,6 +33,8 @@
         border-radius: 4px;
         background-color: #cac4ce;
         color: #242038;
+        display: none;
+        flex-direction: column;
       }
       input[type="text"],
       input[type="password"] {
@@ -96,37 +98,53 @@
         placeholder="(e.g., 'I want my flashcards to be short and concise')"
       />
     </div>
-
-    <div style="margin-bottom: 15px">
-      <label for="pref"># Flashcards:</label>
-      <input
-        type="number"
-        id="num-cards"
-        value="5"
+    <button id="summarize">Summarize</button>
+    <!-- Saved Highlights Section -->
+    <div
+      id="saved-highlights-section"
+      style="margin-top: 20px; margin-bottom: 15px; display: none"
+    >
+      <h4
         style="
-          width: 25%;
-          padding: 8px;
-          margin-top: 5px;
+          margin-top: 0;
+          margin-bottom: 10px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        "
+      >
+        Saved Highlights
+        <button
+          id="clear-highlights"
+          style="width: auto; font-size: 12px; padding: 5px 10px; margin: 0"
+        >
+          Clear All
+        </button>
+      </h4>
+      <div
+        id="highlights-list"
+        style="
+          max-height: 200px;
+          overflow-y: auto;
+          margin-bottom: 10px;
           border: 1px solid #ddd;
           border-radius: 4px;
+          padding: 5px;
+          color: #242038;
         "
-      />
-    </div>
-    <!-- Saved Highlights Section -->
-    <div id="saved-highlights-section" style="margin-top: 20px; margin-bottom: 15px; display: none;">
-      <h4 style="margin-top: 0; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
-        Highlights on Current Page
-        <button id="clear-highlights" style="width: auto; font-size: 12px; padding: 5px 10px; margin: 0;">Clear All</button>
-      </h4>
-      <div id="highlights-list" style="max-height: 200px; overflow-y: auto; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px; padding: 5px;">
+      >
         <!-- Highlights will be populated here -->
       </div>
-      <button id="generate-from-highlights" style="background-color: #34a853;">Generate Cards from Highlights</button>
+      <button id="generate-from-highlights" style="background-color: #34a853">
+        Generate Cards from Highlights
+      </button>
     </div>
-    
+
     <button id="extract">Extract & Generate from Article</button>
+
     <div id="clipboard-status"></div>
     <div id="result"></div>
+
     <script type="module" src="popup.js"></script>
   </body>
 </html>
