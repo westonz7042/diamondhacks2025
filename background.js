@@ -8,65 +8,210 @@ function getEndpoint() {
   return `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
 }
 
+// URL utility functions
+function getHostnameFromUrl(url) {
+  if (!url) return 'unknown';
+  
+  try {
+    // Handle invalid or special URLs gracefully
+    if (url.startsWith('file://')) return 'local-file';
+    if (url.startsWith('chrome://')) return 'chrome-internal';
+    if (url.startsWith('chrome-extension://')) return 'extension';
+    
+    // Parse the URL and extract the hostname
+    const hostname = new URL(url).hostname;
+    return hostname || 'unknown';
+  } catch (error) {
+    console.error('Error parsing URL:', error);
+    return 'unknown';
+  }
+}
+
+// Initialize storage structure on installation
 chrome.runtime.onInstalled.addListener(() => {
   console.log("Extension installed");
   
-  // Initialize saved highlights storage
+  // Initialize saved highlights storage and migrate if needed
   chrome.storage.local.get(['savedHighlights'], function(result) {
     if (!result.savedHighlights) {
-      chrome.storage.local.set({ savedHighlights: [] });
+      // If no saved highlights exist, create the new structure
+      chrome.storage.local.set({ savedHighlights: {} });
+    } else if (Array.isArray(result.savedHighlights)) {
+      // Migration: Convert from array to website-based object
+      console.log("Migrating existing highlights to website-based storage...");
+      migrateHighlightsToWebsiteBased(result.savedHighlights);
     }
   });
 });
 
+// Function to migrate from flat array to website-based object
+function migrateHighlightsToWebsiteBased(oldHighlights) {
+  // Create a new object structure
+  const newHighlights = {};
+  
+  // Process each highlight and organize by website
+  oldHighlights.forEach(highlight => {
+    const hostname = getHostnameFromUrl(highlight.url);
+    
+    // Initialize the array for this website if it doesn't exist
+    if (!newHighlights[hostname]) {
+      newHighlights[hostname] = [];
+    }
+    
+    // Add the highlight to the website's array
+    newHighlights[hostname].push(highlight);
+  });
+  
+  // Save the new structure
+  chrome.storage.local.set({ savedHighlights: newHighlights }, function() {
+    console.log("Migration complete. Highlights organized by website.");
+    
+    // Update badge with total count
+    const totalCount = Object.values(newHighlights)
+      .reduce((sum, highlights) => sum + highlights.length, 0);
+    updateHighlightBadge(totalCount);
+  });
+}
+
 // Functions to manage saved highlights
-function getSavedHighlights() {
+function getSavedHighlights(websiteUrl) {
   return new Promise((resolve) => {
     chrome.storage.local.get(['savedHighlights'], function(result) {
-      resolve(result.savedHighlights || []);
+      const savedHighlights = result.savedHighlights || {};
+      
+      if (websiteUrl) {
+        // If a specific website is requested, return only those highlights
+        const hostname = getHostnameFromUrl(websiteUrl);
+        resolve(savedHighlights[hostname] || []);
+      } else {
+        // If no website specified, return all highlights
+        // For backward compatibility, we also provide a flat array
+        const allHighlights = Object.values(savedHighlights)
+          .reduce((all, siteHighlights) => all.concat(siteHighlights), []);
+        
+        // Return both formats for flexibility
+        resolve({
+          byWebsite: savedHighlights,
+          allHighlights: allHighlights
+        });
+      }
     });
   });
 }
 
 function saveHighlight(highlight) {
-  return getSavedHighlights().then(highlights => {
-    highlights.push({
-      ...highlight,
-      id: Date.now(), // Use timestamp as unique ID
-      timestamp: new Date().toISOString()
-    });
-    
-    return new Promise((resolve) => {
-      chrome.storage.local.set({ savedHighlights: highlights }, function() {
-        // Update badge to show count of saved highlights
-        updateHighlightBadge(highlights.length);
-        resolve(highlights);
+  return new Promise((resolve) => {
+    chrome.storage.local.get(['savedHighlights'], function(result) {
+      const savedHighlights = result.savedHighlights || {};
+      const hostname = getHostnameFromUrl(highlight.url);
+      
+      // Initialize this website's array if it doesn't exist
+      if (!savedHighlights[hostname]) {
+        savedHighlights[hostname] = [];
+      }
+      
+      // Add the new highlight with ID and timestamp
+      savedHighlights[hostname].push({
+        ...highlight,
+        id: Date.now(), // Use timestamp as unique ID
+        timestamp: new Date().toISOString()
+      });
+      
+      // Save the updated structure
+      chrome.storage.local.set({ savedHighlights }, function() {
+        // Only show count for the current website in the badge
+        const currentSiteCount = savedHighlights[hostname].length;
+        
+        // Update badge with just this site's count
+        updateHighlightBadge(currentSiteCount);
+        
+        // For convenience, also return all highlights for this website
+        resolve({
+          websiteHighlights: savedHighlights[hostname],
+          totalCount: currentSiteCount
+        });
       });
     });
   });
 }
 
 function removeHighlight(highlightId) {
-  return getSavedHighlights().then(highlights => {
-    const updatedHighlights = highlights.filter(h => h.id !== highlightId);
-    
-    return new Promise((resolve) => {
-      chrome.storage.local.set({ savedHighlights: updatedHighlights }, function() {
-        // Update badge to show updated count
-        updateHighlightBadge(updatedHighlights.length);
-        resolve(updatedHighlights);
+  return new Promise((resolve) => {
+    chrome.storage.local.get(['savedHighlights'], function(result) {
+      const savedHighlights = result.savedHighlights || {};
+      let foundAndRemoved = false;
+      let affectedHostname = null;
+      
+      // Search through all websites to find and remove the highlight
+      for (const hostname in savedHighlights) {
+        const siteHighlights = savedHighlights[hostname];
+        const initialLength = siteHighlights.length;
+        
+        // Filter out the highlight with matching ID
+        savedHighlights[hostname] = siteHighlights.filter(h => h.id !== highlightId);
+        
+        // If length changed, we found and removed it
+        if (savedHighlights[hostname].length < initialLength) {
+          foundAndRemoved = true;
+          affectedHostname = hostname;
+        }
+      }
+      
+      // Save the updated structure
+      chrome.storage.local.set({ savedHighlights }, function() {
+        // Get active tab to update the badge appropriately
+        chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+          if (tabs.length > 0 && tabs[0].url) {
+            const currentHostname = getHostnameFromUrl(tabs[0].url);
+            
+            // Update badge to show count for current site
+            const currentSiteHighlights = savedHighlights[currentHostname] || [];
+            updateHighlightBadge(currentSiteHighlights.length);
+          }
+          
+          // Return the updated highlights structure
+          resolve({
+            byWebsite: savedHighlights,
+            success: foundAndRemoved
+          });
+        });
       });
     });
   });
 }
 
-function clearAllHighlights() {
+function clearAllHighlights(websiteUrl) {
   return new Promise((resolve) => {
-    chrome.storage.local.set({ savedHighlights: [] }, function() {
-      // Remove badge when no highlights
-      updateHighlightBadge(0);
-      resolve([]);
-    });
+    // If a specific website is provided, only clear that website's highlights
+    if (websiteUrl) {
+      chrome.storage.local.get(['savedHighlights'], function(result) {
+        const savedHighlights = result.savedHighlights || {};
+        const hostname = getHostnameFromUrl(websiteUrl);
+        
+        // Clear just this website's highlights
+        if (savedHighlights[hostname]) {
+          delete savedHighlights[hostname];
+          
+          // Save the updated structure
+          chrome.storage.local.set({ savedHighlights }, function() {
+            // Clear badge (no highlights for this site)
+            chrome.action.setBadgeText({ text: '' });
+            resolve({ success: true, totalCount: 0 });
+          });
+        } else {
+          // No highlights for this website
+          resolve({ success: true, totalCount: 0 });
+        }
+      });
+    } else {
+      // If no website specified, this is a legacy call from older versions
+      // We'll keep it for backward compatibility but it's not used in the new UI
+      chrome.storage.local.set({ savedHighlights: {} }, function() {
+        // Remove badge
+        chrome.action.setBadgeText({ text: '' });
+        resolve({ success: true, totalCount: 0 });
+      });
+    }
   });
 }
 
@@ -80,10 +225,34 @@ function updateHighlightBadge(count) {
   }
 }
 
-// Initialize badge on startup
-chrome.storage.local.get(['savedHighlights'], function(result) {
-  const highlights = result.savedHighlights || [];
-  updateHighlightBadge(highlights.length);
+// Initialize badge on startup for active tab
+chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+  if (tabs.length > 0 && tabs[0].url) {
+    const hostname = getHostnameFromUrl(tabs[0].url);
+    
+    chrome.storage.local.get(['savedHighlights'], function(result) {
+      const savedHighlights = result.savedHighlights || {};
+      const siteHighlights = savedHighlights[hostname] || [];
+      
+      updateHighlightBadge(siteHighlights.length);
+    });
+  }
+});
+
+// Update badge when tabs change
+chrome.tabs.onActivated.addListener(function(activeInfo) {
+  chrome.tabs.get(activeInfo.tabId, function(tab) {
+    if (tab && tab.url) {
+      const hostname = getHostnameFromUrl(tab.url);
+      
+      chrome.storage.local.get(['savedHighlights'], function(result) {
+        const savedHighlights = result.savedHighlights || {};
+        const siteHighlights = savedHighlights[hostname] || [];
+        
+        updateHighlightBadge(siteHighlights.length);
+      });
+    }
+  });
 });
 
 // Function to clean up text using Gemini API
@@ -131,6 +300,12 @@ function cleanupTextWithAPI(text, apiKey) {
 
 // This listener will be called when the popup requests content extraction or when selection-based generation is requested
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  // Check if the extension context is still valid
+  if (chrome.runtime.id === undefined) {
+    console.error("Extension context invalidated");
+    return;
+  }
+  
   if (request.action === "extract") {
     console.log("Extraction requested for tab:", request.tabId);
     
@@ -145,11 +320,24 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       target: { tabId: request.tabId },
       files: ["readability.js", "content.js"]
     }).then(() => {
+      // Check again if extension context is still valid
+      if (chrome.runtime.id === undefined) {
+        console.error("Extension context invalidated during script execution");
+        return;
+      }
+      
       // Now that the content script is injected, send a message to it
       chrome.tabs.sendMessage(request.tabId, { 
         action: "extractContent",
         apiKey: request.apiKey 
       }, async (response) => {
+        // Check for runtime.lastError
+        if (chrome.runtime.lastError) {
+          console.error("Error sending message:", chrome.runtime.lastError);
+          sendResponse({ success: false, error: chrome.runtime.lastError.message });
+          return;
+        }
+        
         console.log("Got response from content script:", response);
         
         if (response && response.success) {
@@ -158,6 +346,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             console.log("Cleaning up extracted text...");
             cleanupTextWithAPI(response.content, request.apiKey)
               .then(cleanedResponse => {
+                // Check if extension context is still valid
+                if (chrome.runtime.id === undefined) {
+                  console.error("Extension context invalidated during API call");
+                  return;
+                }
+                
                 if (cleanedResponse.success) {
                   // Return the cleaned text
                   sendResponse({
@@ -220,7 +414,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true; // Keep the message channel open for async response
   }
   else if (request.action === "getHighlights") {
-    getSavedHighlights().then(highlights => {
+    // Check if we're requesting highlights for a specific website
+    const websiteUrl = request.websiteUrl || null;
+    
+    getSavedHighlights(websiteUrl).then(highlights => {
       sendResponse({ success: true, highlights });
     }).catch(error => {
       sendResponse({ success: false, error: error.message });
@@ -238,8 +435,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true; // Keep the message channel open for async response
   }
   else if (request.action === "clearHighlights") {
-    clearAllHighlights().then(() => {
-      sendResponse({ success: true });
+    clearAllHighlights(request.websiteUrl).then((result) => {
+      sendResponse({ success: true, totalCount: result.totalCount });
     }).catch(error => {
       sendResponse({ success: false, error: error.message });
     });
