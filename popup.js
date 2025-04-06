@@ -51,8 +51,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       // Send the flashcards to Anki
       const addedNotes = await addFlashcards(flashcardsArray, selectedDeck);
 
-      // Sync Anki to save changes
-      await syncAnki();
+      // Try to sync Anki but don't fail if sync auth isn't configured
+      try {
+        await syncAnki();
+      } catch (syncError) {
+        console.warn("Anki sync failed:", syncError);
+        // Continue execution - this is not a critical error
+      }
 
       // Show success message
       const successCount = addedNotes.filter((id) => id !== null).length;
