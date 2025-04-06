@@ -32,7 +32,7 @@ style.textContent = `
     box-sizing: border-box;
   }
   .flashcard-face.back {
-    transform: rotateX(180deg);
+    transform: rotateX(-180deg);
     background: #e9f9ff;
   }
   .flashcard-controls {
