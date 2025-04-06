@@ -19,9 +19,26 @@ export async function generateFlashcards(text, userPreference, numFlashcards) {
       }
 
       const prompt = `
-      Create ${numFlashcards} flashcards based on the following article. Only include facts, definitions, or concepts that would help someone understand or study the topic. 
+      Create ${numFlashcards} high-quality flashcards based on the following article. Follow these essential guidelines:
+      
+      • Each card must focus on ONE specific concept (atomic knowledge)
+      • Questions should be precise and unambiguous about what they're asking
+      • Answers must be EXTREMELY concise - 1-2 sentences maximum (10-25 words)
+      • Focus on core concepts, relationships, and techniques rather than trivia
+      • Avoid yes/no questions or questions with binary answers
+      • When referencing authors, use specific names instead of "the author"
+      • Questions should require genuine recall, not just recognition
+      
+      Consider these knowledge types:
+      • For facts: Break complex facts into atomic units
+      • For concepts: Address attributes, similarities/differences, and significance
+      • For procedures: Focus on decision points and critical parameters
+      
       ${userPreference ? userPreference : ""}
-      Simply output an array of json objects where it needs to be {"front":question, "back":answer}. Do not include the word json. Do not 
+      
+      Your output must be in CSV format with each row as: Question,Answer
+      Do not include headers or file type information.
+      
       Article:
       \n\n${text}
       `;
