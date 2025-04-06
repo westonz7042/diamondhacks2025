@@ -421,7 +421,7 @@ async function extractContent() {
                 buttonContainer.appendChild(ankiButton);
 
                 resultElement.innerHTML = `
-            <h2 style="text-align: center;">${
+            <h2 style="text-align: center; margin: 0px; ">${
               escapeHTML(response.title) || "Extracted Content"
             }</h2>`;
                 resultElement.appendChild(buttonContainer);
@@ -549,7 +549,7 @@ async function summarizeContent() {
   const resultElement = document.getElementById("result");
   const pref = document.getElementById("pref").value.trim();
   resultElement.innerHTML =
-    '<div class="load-div"> <div class="loader"></div> <div>Summarizing article...</div> </div>';
+    '<div class="load-div"> <div class="loader"></div> <div>Summarizing content...</div> </div>';
   resultElement.style.display = "flex";
 
   chrome.storage.sync.get(["apiKey"], async function (result) {
@@ -623,7 +623,9 @@ async function summarizeContent() {
 
                 if (response.success) {
                   // resultElement.innerHTML = `<h4>Summary</h4><p>${response.content}</p>`;
-                  resultElement.innerHTML = `<p>${escapeHTML(response.content)}</p>`;
+                  resultElement.innerHTML = `<p>${escapeHTML(
+                    response.content
+                  )}</p>`;
                 } else {
                   resultElement.innerHTML = `<p>Failed to summarize: ${response.error}</p>`;
                 }
