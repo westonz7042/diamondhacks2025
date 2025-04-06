@@ -60,14 +60,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("extract").addEventListener("click", extractContent);
 
+  // prompts
   document.getElementById("pref").addEventListener("change", function () {
     const pref = document.getElementById("pref").value.trim();
     chrome.storage.sync.set({ pref: pref });
   });
 
+  //num cards
   document.getElementById("num-cards").addEventListener("change", function () {
     const pref = document.getElementById("num-cards").value.trim();
     chrome.storage.sync.set({ numCards: numCards });
+  });
+
+  // Styling
+  const checkbox = document.getElementById("show-key");
+  checkbox.addEventListener("click", (event) => {
+    document.getElementById("api-key").type = checkbox.checked
+      ? "text"
+      : "password";
   });
 });
 
@@ -75,7 +85,8 @@ async function extractContent() {
   try {
     // Show loading state
     const resultElement = document.getElementById("result");
-    resultElement.innerHTML = "<p>Extracting and cleaning content...</p>";
+    resultElement.innerHTML =
+      '<div class="load-div"> <div class="loader"></div> <div>Extracting and cleaning content...</div> </div>';
 
     // Get the active tab
     const [tab] = await chrome.tabs.query({
