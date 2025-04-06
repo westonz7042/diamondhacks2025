@@ -17,6 +17,16 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   document.getElementById("extract").addEventListener("click", extractContent);
+
+  document.getElementById("pref").addEventListener("change", function () {
+    const pref = document.getElementById("pref").value.trim();
+    chrome.storage.sync.set({ pref: pref });
+  });
+
+  document.getElementById("num-cards").addEventListener("change", function () {
+    const pref = document.getElementById("num-cards").value.trim();
+    chrome.storage.sync.set({ numCards: numCards });
+  });
 });
 
 async function extractContent() {
@@ -33,10 +43,19 @@ async function extractContent() {
 
     // Get API key from input
     const apiKey = document.getElementById("api-key").value.trim();
+    const pref = document.getElementById("pref").value.trim();
+    const numCards = document.getElementById("num-cards").value.trim();
+
 
     // Send message to the background script to handle content extraction
     chrome.runtime.sendMessage(
-      { action: "extract", tabId: tab.id, apiKey: apiKey },
+      {
+        action: "extract",
+        tabId: tab.id,
+        apiKey: apiKey,
+        pref: pref,
+        numCards: numCards,
+      },
       (response) => {
         if (chrome.runtime.lastError) {
           resultElement.innerHTML = `<p>Error: ${chrome.runtime.lastError.message}</p>`;
@@ -49,9 +68,10 @@ async function extractContent() {
           }</p>`;
           return;
         }
-
+        
         // Generate flashcards from the cleaned content
-        generateFlashcards(response.content)
+        generateFlashcards(response.content, pref, numCards)
+        
           .then((flashcards) => {
             const blob = new Blob([flashcards], { type: "text/csv" });
             const url = URL.createObjectURL(blob);
