@@ -229,49 +229,89 @@ async function generateFromHighlights() {
         return;
       }
       
-      // First extract the full article for context
+      // Extract the full article for context and generate cards
       chrome.tabs.sendMessage(tab.id, { 
         action: "extractContent",
         apiKey: apiKey 
       }, async (extractResponse) => {
-        if (!extractResponse || !extractResponse.success) {
-          // If we can't get the full article, just use the highlights
-          processHighlightsOnly(highlights, apiKey, pref, numCards);
-          return;
-        }
-        
         try {
-          // We have the full article, generate cards with context
-          const fullArticle = extractResponse.content;
+          // Get the article content if available, or just use highlights
+          const fullArticle = (extractResponse && extractResponse.success) 
+            ? extractResponse.content 
+            : "";
           
-          // Create a special prompt that combines the highlights with the full article context
+          // Create a prompt with the highlighted text (and article if available)
           const highlightTexts = highlights.map(h => h.content).join('\n\n---\n\n');
           
-          const specialPrompt = `
-          For this task, I'm providing you with HIGHLIGHTED TEXT passages from an article.
-          Generate ${numCards} high-quality flashcards focusing SPECIFICALLY on the highlighted passages.
-          Use the full article for context to create better cards.
+          let specialPrompt;
+          if (fullArticle) {
+            // Use full article as context if available
+            specialPrompt = `
+            For this task, I'm providing you with HIGHLIGHTED TEXT passages from an article.
+            Generate ${numCards} high-quality flashcards focusing SPECIFICALLY on the highlighted passages.
+            Use the full article for context to create better cards.
+            
+            ${pref ? `User preferences: ${pref}` : ''}
+            
+            HIGHLIGHTED PASSAGES (create cards for these specifically):
+            ${highlightTexts}
+            
+            FULL ARTICLE (for context):
+            ${fullArticle}
+            `;
+          } else {
+            // Just use highlights if no article context
+            specialPrompt = `
+            Generate ${numCards} high-quality flashcards based on these excerpts:
+            
+            ${pref ? `User preferences: ${pref}` : ''}
+            
+            Text:
+            ${highlightTexts}
+            `;
+          }
           
-          ${pref ? `User preferences: ${pref}` : ''}
+          // Generate the flashcards from the data
+          const flashcardsData = await generateFlashcards(specialPrompt, null, numCards);
           
-          HIGHLIGHTED PASSAGES (create cards for these specifically):
-          ${highlightTexts}
+          // Process JSON response
+          let jsonArray;
+          if (typeof flashcardsData === 'string') {
+            // Handle string response (could be JSON string)
+            let trimmedData = flashcardsData.trim().replace(/^```|```$/g, "");
+            try {
+              jsonArray = JSON.parse(trimmedData);
+            } catch (error) {
+              console.error("Failed to parse JSON:", error);
+              resultElement.innerHTML = `<p>Error parsing response: ${error.message}</p>`;
+              return;
+            }
+          } else if (Array.isArray(flashcardsData)) {
+            // Handle direct array response
+            jsonArray = flashcardsData;
+          } else {
+            console.error("Unexpected response format:", flashcardsData);
+            resultElement.innerHTML = `<p>Error: Unexpected response format</p>`;
+            return;
+          }
           
-          FULL ARTICLE (for context):
-          ${fullArticle}
-          `;
-          
-          // Generate the flashcards from the combined data
-          const flashcards = await generateFlashcards(specialPrompt, null, numCards);
+          // Convert JSON to CSV format
+          const csvContent = jsonArray
+            .map(({ front, back }) => {
+              const escapedFront = `"${(front || "").replace(/"/g, '""')}"`;
+              const escapedBack = `"${(back || "").replace(/"/g, '""')}"`;
+              return `${escapedFront},${escapedBack}`;
+            })
+            .join("\n");
           
           // Display the results
-          const blob = new Blob([flashcards], { type: "text/csv" });
+          const blob = new Blob([csvContent], { type: "text/csv" });
           const url = URL.createObjectURL(blob);
           const downloadLink = document.createElement("a");
-          const sanitizedTitle = extractResponse.title
-            ? extractResponse.title.replace(/[^\w\s]/gi, "")
+          const title = (extractResponse && extractResponse.title) 
+            ? extractResponse.title.replace(/[^\w\s]/gi, "") 
             : "flashcards_from_highlights";
-          downloadLink.download = `${sanitizedTitle}_flashcards.csv`;
+          downloadLink.download = `${title}_flashcards.csv`;
           downloadLink.href = url;
           downloadLink.textContent = "Download Flashcards as CSV";
           downloadLink.style.display = "block";
@@ -279,11 +319,10 @@ async function generateFromHighlights() {
           
           // Display the extracted content
           resultElement.innerHTML = `
-            <h4>${extractResponse.title || "Flashcards From Highlights"}</h4>
-            <div>${flashcards}</div>
+            <h4>${(extractResponse && extractResponse.title) || "Flashcards From Highlights"}</h4>
           `;
           resultElement.appendChild(downloadLink);
-          displayQuizletFlashcards(flashcards);
+          displayQuizletFlashcards(jsonArray);
           
         } catch (error) {
           console.error("Error generating flashcards:", error);
@@ -294,50 +333,6 @@ async function generateFromHighlights() {
   } catch (error) {
     console.error("Error in generate from highlights:", error);
     document.getElementById("result").innerHTML = `<p>Error: ${error.message}</p>`;
-  }
-}
-
-// Function to process highlights without full article context
-async function processHighlightsOnly(highlights, apiKey, pref, numCards) {
-  try {
-    const resultElement = document.getElementById("result");
-    
-    // Combine all highlights
-    const highlightTexts = highlights.map(h => h.content).join('\n\n---\n\n');
-    
-    // Create a prompt using just the highlights
-    const prompt = `
-    Generate ${numCards} high-quality flashcards based on these excerpts:
-    
-    ${pref ? `User preferences: ${pref}` : ''}
-    
-    Text:
-    ${highlightTexts}
-    `;
-    
-    // Generate the flashcards
-    const flashcards = await generateFlashcards(prompt, null, numCards);
-    
-    // Display the results
-    const blob = new Blob([flashcards], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const downloadLink = document.createElement("a");
-    downloadLink.download = `flashcards_from_highlights.csv`;
-    downloadLink.href = url;
-    downloadLink.textContent = "Download Flashcards as CSV";
-    downloadLink.style.display = "block";
-    downloadLink.style.marginTop = "10px";
-    
-    resultElement.innerHTML = `
-      <h4>Flashcards From Highlights</h4>
-      <div>${flashcards}</div>
-    `;
-    resultElement.appendChild(downloadLink);
-    displayQuizletFlashcards(flashcards);
-    
-  } catch (error) {
-    console.error("Error processing highlights:", error);
-    document.getElementById("result").innerHTML = `<p>Error processing highlights: ${error}</p>`;
   }
 }
 
@@ -382,12 +377,30 @@ async function extractContent() {
         // Generate flashcards from the cleaned content
 
         generateFlashcards(response.content, pref)
-          .then((flashcardsArray) => {
-            // resultElement.innerHTML = `</h4><h4>${flashcardsArray}</h4>`;
-            // Convert to CSV string for download
-            // let x = JSON.parse(flashcardsArray);
-            let trimmedArray = flashcardsArray.trim().replace(/^```|```$/g, "");
-            let jsonArray = JSON.parse(trimmedArray);
+          .then((flashcardsData) => {
+            // Process the JSON response from generateFlashcards
+            let jsonArray;
+            
+            if (typeof flashcardsData === 'string') {
+              // Handle string response (could be JSON string)
+              let trimmedData = flashcardsData.trim().replace(/^```|```$/g, "");
+              try {
+                jsonArray = JSON.parse(trimmedData);
+              } catch (error) {
+                console.error("Failed to parse JSON:", error);
+                resultElement.innerHTML = `<p>Error parsing response: ${error.message}</p>`;
+                return;
+              }
+            } else if (Array.isArray(flashcardsData)) {
+              // Handle direct array response
+              jsonArray = flashcardsData;
+            } else {
+              console.error("Unexpected response format:", flashcardsData);
+              resultElement.innerHTML = `<p>Error: Unexpected response format</p>`;
+              return;
+            }
+            
+            // Convert JSON to CSV format
             const csvContent = jsonArray
               .map(({ front, back }) => {
                 const escapedFront = `"${(front || "").replace(/"/g, '""')}"`;
@@ -396,6 +409,7 @@ async function extractContent() {
               })
               .join("\n");
 
+            // Create download link for CSV
             const blob = new Blob([csvContent], { type: "text/csv" });
             const url = URL.createObjectURL(blob);
             const downloadLink = document.createElement("a");
@@ -432,8 +446,33 @@ async function extractContent() {
     ).innerHTML = `<p>Error: ${error.message}</p>`;
   }
 }
-function displayQuizletFlashcards(flashcardsArray) {
+function displayQuizletFlashcards(flashcardsData) {
   let currentIndex = 0;
+  
+  // Ensure we have a valid array of flashcard objects
+  let flashcardsArray;
+  
+  if (typeof flashcardsData === 'string') {
+    try {
+      // Try to parse if it's a JSON string
+      let trimmedData = flashcardsData.trim().replace(/^```|```$/g, "");
+      flashcardsArray = JSON.parse(trimmedData);
+    } catch (error) {
+      console.error("Error parsing flashcards data:", error);
+      return; // Exit if parsing fails
+    }
+  } else if (Array.isArray(flashcardsData)) {
+    flashcardsArray = flashcardsData;
+  } else {
+    console.error("Invalid flashcards data format:", flashcardsData);
+    return; // Exit if format is invalid
+  }
+  
+  // Check if array is empty
+  if (!flashcardsArray || flashcardsArray.length === 0) {
+    console.error("No flashcards to display");
+    return;
+  }
 
   const container = document.createElement("div");
   container.id = "quizlet-container";
