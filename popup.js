@@ -17,13 +17,22 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   document.getElementById("extract").addEventListener("click", extractContent);
+
+  // Styling
+  const checkbox = document.getElementById("show-key");
+  checkbox.addEventListener("click", (event) => {
+    document.getElementById("api-key").type = checkbox.checked
+      ? "text"
+      : "password";
+  });
 });
 
 async function extractContent() {
   try {
     // Show loading state
     const resultElement = document.getElementById("result");
-    resultElement.innerHTML = "<p>Extracting and cleaning content...</p>";
+    resultElement.innerHTML =
+      '<div class="load-div"> <div class="loader"></div> <div>Extracting and cleaning content...</div> </div>';
 
     // Get the active tab
     const [tab] = await chrome.tabs.query({
