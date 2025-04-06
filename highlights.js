@@ -3,6 +3,8 @@ import { displayQuizletFlashcards } from "./popup.js";
 
 // Function to load and display saved highlights
 export function loadSavedHighlights() {
+  console.log("Loading saved highlights...");
+  
   // Get the current URL to check for current site highlights
   chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     const currentTab = tabs[0];
@@ -13,15 +15,25 @@ export function loadSavedHighlights() {
       return;
     }
 
+    console.log("Current tab URL:", currentUrl);
+
     // Extract hostname from the current URL
     let currentHostname = "";
+    let currentPathname = "";
+    
     try {
       const url = new URL(currentUrl);
       currentHostname = url.hostname;
+      currentPathname = url.pathname.replace(/\/$/, ""); // Remove trailing slash
+      console.log("Parsed URL parts:", { hostname: currentHostname, pathname: currentPathname });
     } catch (e) {
       console.error("Error parsing current URL:", e);
       return;
     }
+
+    // Form the complete hostname+path identifier for consistency with background.js
+    const fullHostname = currentHostname + currentPathname;
+    console.log("Using full hostname identifier:", fullHostname);
 
     // Get highlights only for the current website
     chrome.runtime.sendMessage(
@@ -31,8 +43,10 @@ export function loadSavedHighlights() {
       },
       function (response) {
         if (response && response.success) {
+          console.log("Got highlights response:", response.highlights);
+          
           // Display highlights for the current site only
-          displayCurrentSiteHighlights(response.highlights, currentHostname);
+          displayCurrentSiteHighlights(response.highlights, fullHostname);
         } else {
           console.error(
             "Failed to load highlights:",
@@ -46,6 +60,8 @@ export function loadSavedHighlights() {
 
 // Function to display highlights from the current website only
 export function displayCurrentSiteHighlights(highlights, currentHostname) {
+  console.log("Displaying highlights for hostname:", currentHostname);
+  
   const highlightsSection = document.getElementById("saved-highlights-section");
   const highlightsList = document.getElementById("highlights-list");
   const extract = document.getElementById("extract");
@@ -60,10 +76,18 @@ export function displayCurrentSiteHighlights(highlights, currentHostname) {
   // 1. An array of highlights directly (new format when requesting specific site)
   // 2. An object with byWebsite & allHighlights (requesting from old format)
   if (Array.isArray(highlights)) {
+    console.log("Received highlights array directly");
     currentSiteHighlights = highlights;
   } else if (highlights.byWebsite && highlights.byWebsite[currentHostname]) {
+    console.log("Found highlights in byWebsite format");
     currentSiteHighlights = highlights.byWebsite[currentHostname];
+  } else if (highlights.byWebsite) {
+    // Debug: Log all available hostnames to help diagnose any hostname mismatch
+    console.log("Available hostnames:", Object.keys(highlights.byWebsite));
+    console.log("Current hostname we're looking for:", currentHostname);
   }
+
+  console.log("Current site highlights count:", currentSiteHighlights.length);
 
   // Check if we have any highlights to display
   if (currentSiteHighlights.length > 0) {
@@ -73,9 +97,21 @@ export function displayCurrentSiteHighlights(highlights, currentHostname) {
     // Add a title showing the current site
     const siteHeader = document.createElement("div");
     siteHeader.className = "site-header";
-    // Extract just the domain part for display to keep UI clean
-    const displayHostname = currentHostname.split('/')[0];
-    const path = currentHostname.substring(displayHostname.length);
+    
+    // Extract parts for display
+    // If currentHostname contains a path, split at the first /
+    let displayHostname, path;
+    if (currentHostname.includes('/')) {
+      const firstSlashIndex = currentHostname.indexOf('/');
+      displayHostname = currentHostname.substring(0, firstSlashIndex);
+      path = currentHostname.substring(firstSlashIndex);
+    } else {
+      displayHostname = currentHostname;
+      path = '';
+    }
+    
+    console.log("Display parts:", { displayHostname, path });
+    
     siteHeader.textContent = `Highlights from ${displayHostname}${path ? path : ''}`;
     siteHeader.style.fontWeight = "bold";
     siteHeader.style.marginBottom = "10px";
@@ -89,6 +125,7 @@ export function displayCurrentSiteHighlights(highlights, currentHostname) {
     websiteFilterValue.type = "hidden";
     websiteFilterValue.id = "website-filter-value";
     websiteFilterValue.value = currentHostname;
+    console.log("Setting website-filter-value to:", currentHostname);
     highlightsList.appendChild(websiteFilterValue);
 
     // Add each highlight to the list
@@ -134,6 +171,7 @@ export function displayCurrentSiteHighlights(highlights, currentHostname) {
     });
   } else {
     // Hide the section if no highlights for this site
+    console.log("No highlights found for this site, hiding section");
     highlightsSection.style.display = "none";
   }
 }
@@ -174,6 +212,8 @@ export function clearAllHighlights() {
   const path = currentWebsite.substring(displayDomain.length);
   const displayLocation = path ? `${displayDomain}${path}` : displayDomain;
   
+  console.log("Attempting to clear highlights for:", currentWebsite);
+  
   if (
     confirm(
       `Are you sure you want to clear all highlights from ${displayLocation}?`
@@ -182,23 +222,37 @@ export function clearAllHighlights() {
     // Need to construct a complete URL for clearing highlights
     // The currentWebsite now contains domain + path
     let urlPrefix = 'https://';
+    const fullUrl = `${urlPrefix}${currentWebsite}`;
+    
+    console.log("Sending clearHighlights message with URL:", fullUrl);
     
     // We have a domain + path format
     chrome.runtime.sendMessage(
       {
         action: "clearHighlights",
-        websiteUrl: `${urlPrefix}${currentWebsite}`,
+        websiteUrl: fullUrl,
       },
       function (response) {
         if (response && response.success) {
+          console.log("Successfully cleared highlights for:", fullUrl);
+          
           // Hide highlights section since all current site highlights are removed
-          document.getElementById("saved-highlights-section").style.display =
-            "none";
+          document.getElementById("saved-highlights-section").style.display = "none";
+          
+          // Reload highlights to ensure everything is in sync
+          // This will update the UI and handle any edge cases
+          setTimeout(() => {
+            console.log("Reloading highlights after clearing");
+            loadSavedHighlights();
+          }, 100);
         } else {
           console.error(
             "Failed to clear highlights:",
             response?.error || "Unknown error"
           );
+          
+          // Try to reload anyway to ensure UI is in sync with storage
+          loadSavedHighlights();
         }
       }
     );

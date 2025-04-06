@@ -143,6 +143,8 @@ function handleFloatingButtonClick() {
         }, 5000);
         
         setTimeout(() => {
+          // Reset button text to original state before hiding
+          window.floatingButton.textContent = '💾 Save Highlight';
           hideFloatingButton();
         }, 2000);
       } else {
@@ -154,6 +156,8 @@ function handleFloatingButtonClick() {
         window.floatingButton.title = errorMsg; // Show error on hover
         
         setTimeout(() => {
+          // Reset button text to original state before hiding
+          window.floatingButton.textContent = '💾 Save Highlight';
           hideFloatingButton();
         }, 2000);
       }
@@ -189,7 +193,7 @@ function updateFloatingButtonPosition() {
 function hideFloatingButton() {
   if (window.floatingButton) {
     window.floatingButton.style.display = 'none';
-    window.floatingButton.textContent = '📝 Save Highlight';
+    // Don't change the button text here to maintain consistency
   }
 }
 

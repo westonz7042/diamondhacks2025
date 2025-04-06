@@ -10,13 +10,25 @@ function getEndpoint() {
 
 // URL utility functions
 function getHostnameFromUrl(url) {
-  if (!url) return "unknown";
+  if (!url) {
+    console.warn("Empty URL passed to getHostnameFromUrl");
+    return "unknown";
+  }
 
   try {
     // Handle invalid or special URLs gracefully
-    if (url.startsWith("file://")) return "local-file";
-    if (url.startsWith("chrome://")) return "chrome-internal";
-    if (url.startsWith("chrome-extension://")) return "extension";
+    if (url.startsWith("file://")) {
+      console.log("Processing file:// URL:", url);
+      return "local-file";
+    }
+    if (url.startsWith("chrome://")) {
+      console.log("Processing chrome:// URL:", url);
+      return "chrome-internal";
+    }
+    if (url.startsWith("chrome-extension://")) {
+      console.log("Processing chrome-extension:// URL:", url);
+      return "extension";
+    }
 
     // Parse the URL and extract the hostname and pathname
     const urlObj = new URL(url);
@@ -25,9 +37,11 @@ function getHostnameFromUrl(url) {
     
     // Combine hostname and pathname (excluding trailing slashes) to create a unique page identifier
     // This ensures different pages on the same domain have different keys
-    return hostname + pathname.replace(/\/$/, "") || "unknown";
+    const result = hostname + pathname.replace(/\/$/, "") || "unknown";
+    console.log(`URL processed: ${url} → ${result}`);
+    return result;
   } catch (error) {
-    console.error("Error parsing URL:", error);
+    console.error("Error parsing URL:", error, "URL was:", url);
     return "unknown";
   }
 }
@@ -199,30 +213,60 @@ function clearAllHighlights(websiteUrl) {
   return new Promise((resolve) => {
     // If a specific website is provided, only clear that website's highlights
     if (websiteUrl) {
+      console.log("Clearing highlights for website:", websiteUrl);
       chrome.storage.local.get(["savedHighlights"], function (result) {
         const savedHighlights = result.savedHighlights || {};
         const hostname = getHostnameFromUrl(websiteUrl);
+        console.log("Generated hostname for clearing:", hostname);
 
         // Clear just this website's highlights
         if (savedHighlights[hostname]) {
+          console.log("Found highlights to clear for hostname:", hostname);
           delete savedHighlights[hostname];
 
           // Save the updated structure
           chrome.storage.local.set({ savedHighlights }, function () {
-            // Clear badge (no highlights for this site)
-            chrome.action.setBadgeText({ text: "" });
-            resolve({ success: true, totalCount: 0 });
+            console.log("Cleared highlights for:", hostname);
+            
+            // Update badge based on active tab after clearing
+            chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+              if (tabs.length > 0 && tabs[0].url) {
+                const currentHostname = getHostnameFromUrl(tabs[0].url);
+                console.log("Active tab hostname:", currentHostname);
+                
+                // Get count for current active tab
+                const currentTabHighlights = savedHighlights[currentHostname] || [];
+                updateHighlightBadge(currentTabHighlights.length);
+                console.log("Updated badge count for active tab:", currentTabHighlights.length);
+              } else {
+                // If no active tab, just clear the badge
+                chrome.action.setBadgeText({ text: "" });
+              }
+              
+              resolve({ success: true, totalCount: 0 });
+            });
           });
         } else {
-          // No highlights for this website
-          resolve({ success: true, totalCount: 0 });
+          console.log("No highlights found for hostname:", hostname);
+          // No highlights for this website, but still update badge for active tab
+          chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+            if (tabs.length > 0 && tabs[0].url) {
+              const currentHostname = getHostnameFromUrl(tabs[0].url);
+              const currentTabHighlights = savedHighlights[currentHostname] || [];
+              updateHighlightBadge(currentTabHighlights.length);
+            } else {
+              chrome.action.setBadgeText({ text: "" });
+            }
+            
+            resolve({ success: true, totalCount: 0 });
+          });
         }
       });
     } else {
       // If no website specified, this is a legacy call from older versions
       // We'll keep it for backward compatibility but it's not used in the new UI
       chrome.storage.local.set({ savedHighlights: {} }, function () {
-        // Remove badge
+        // Remove badge for all tabs
         chrome.action.setBadgeText({ text: "" });
         resolve({ success: true, totalCount: 0 });
       });
