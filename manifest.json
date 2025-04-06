@@ -8,7 +8,10 @@
     "scripting",
     "clipboardWrite",
     "storage",
-    "downloads"
+    "downloads",
+    "declarativeNetRequest",
+    "declarativeNetRequestFeedback",
+    "webRequest"
   ],
   "host_permissions": ["<all_urls>"],
   "action": {
@@ -20,13 +23,13 @@
   },
   "content_scripts": [
     {
-      "js": ["readability.js", "content.js"],
+      "js": ["libs/pdf.min.js", "content.js"],
       "matches": ["<all_urls>"]
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["flashcard.js"],
+      "resources": ["libs/pdf.worker.min.js", "libs/pdf.min.js"],
       "matches": ["<all_urls>"]
     }
   ]

@@ -492,14 +492,9 @@ async function extractContent() {
     const apiKey = document.getElementById("api-key").value.trim();
     const pref = document.getElementById("pref").value.trim();
 
-    // Send message to the background script to handle content extraction
+    // check if page is pdf
     chrome.runtime.sendMessage(
-      {
-        action: "extract",
-        tabId: tab.id,
-        apiKey: apiKey,
-        pref: pref,
-      },
+      { action: "getPDFStatus", tabId: tab.id },
       (response) => {
         if (chrome.runtime.lastError) {
           resultElement.innerHTML = `<p>Error: ${chrome.runtime.lastError.message}</p>`;
@@ -513,69 +508,97 @@ async function extractContent() {
           return;
         }
 
-        // Generate flashcards from the cleaned content
+        const isPDF = response.isPDF;
+        console.log(response);
+        console.log(`Is ${tab.id} a pdf?`, isPDF);
 
-        generateFlashcards(response.content, pref)
-          .then((flashcardsData) => {
-            // Process the JSON response from generateFlashcards
-            let jsonArray;
-
-            if (typeof flashcardsData === "string") {
-              // Handle string response (could be JSON string)
-              let trimmedData = flashcardsData.trim().replace(/^```|```$/g, "");
-              try {
-                jsonArray = JSON.parse(trimmedData);
-              } catch (error) {
-                console.error("Failed to parse JSON:", error);
-                resultElement.innerHTML = `<p>Error parsing response: ${error.message}</p>`;
-                return;
-              }
-            } else if (Array.isArray(flashcardsData)) {
-              // Handle direct array response
-              jsonArray = flashcardsData;
-            } else {
-              console.error("Unexpected response format:", flashcardsData);
-              resultElement.innerHTML = `<p>Error: Unexpected response format</p>`;
+        // Send message to the background script to handle content extraction
+        chrome.runtime.sendMessage(
+          {
+            action: "extract",
+            tabId: tab.id,
+            apiKey: apiKey,
+            pref: pref,
+            isPDF: isPDF,
+          },
+          (response) => {
+            if (chrome.runtime.lastError) {
+              resultElement.innerHTML = `<p>Error: ${chrome.runtime.lastError.message}</p>`;
               return;
             }
 
-            // Convert JSON to CSV format
-            const csvContent = jsonArray
-              .map(({ front, back }) => {
-                const escapedFront = `"${(front || "").replace(/"/g, '""')}"`;
-                const escapedBack = `"${(back || "").replace(/"/g, '""')}"`;
-                return `${escapedFront},${escapedBack}`;
-              })
-              .join("\n");
+            if (!response || !response.success) {
+              resultElement.innerHTML = `<p>Extraction failed: ${
+                response?.error || "Unknown error"
+              }</p>`;
+              return;
+            }
 
-            // Create download link for CSV
-            const blob = new Blob([csvContent], { type: "text/csv" });
-            const url = URL.createObjectURL(blob);
-            const downloadLink = document.createElement("a");
-            const sanitizedTitle = response.title
-              ? response.title.replace(/[^\w\s]/gi, "")
-              : "flashcards";
-            downloadLink.download = `${sanitizedTitle}_flashcards.csv`;
-            downloadLink.href = url;
-            downloadLink.textContent = "Download Flashcards as CSV";
-            downloadLink.style.display = "block";
-            downloadLink.style.marginTop = "10px";
+            // Generate flashcards from the cleaned content
 
-            resultElement.innerHTML = `
+            generateFlashcards(response.content, pref)
+              .then((flashcardsData) => {
+                // Process the JSON response from generateFlashcards
+                let jsonArray;
+
+                if (typeof flashcardsData === "string") {
+                  // Handle string response (could be JSON string)
+                  let trimmedData = flashcardsData
+                    .trim()
+                    .replace(/^```|```$/g, "");
+                  try {
+                    jsonArray = JSON.parse(trimmedData);
+                  } catch (error) {
+                    console.error("Failed to parse JSON:", error);
+                    resultElement.innerHTML = `<p>Error parsing response: ${error.message}</p>`;
+                    return;
+                  }
+                } else if (Array.isArray(flashcardsData)) {
+                  // Handle direct array response
+                  jsonArray = flashcardsData;
+                } else {
+                  console.error("Unexpected response format:", flashcardsData);
+                  resultElement.innerHTML = `<p>Error: Unexpected response format</p>`;
+                  return;
+                }
+
+                // Convert JSON to CSV format
+                const csvContent = jsonArray
+                  .map(({ front, back }) => {
+                    const escapedFront = `"${(front || "").replace(
+                      /"/g,
+                      '""'
+                    )}"`;
+                    const escapedBack = `"${(back || "").replace(/"/g, '""')}"`;
+                    return `${escapedFront},${escapedBack}`;
+                  })
+                  .join("\n");
+
+                // Create download link for CSV
+                const blob = new Blob([csvContent], { type: "text/csv" });
+                const url = URL.createObjectURL(blob);
+                const downloadLink = document.createElement("a");
+                const sanitizedTitle = response.title
+                  ? response.title.replace(/[^\w\s]/gi, "")
+                  : "flashcards";
+                downloadLink.download = `${sanitizedTitle}_flashcards.csv`;
+                downloadLink.href = url;
+                downloadLink.textContent = "Download Flashcards as CSV";
+                downloadLink.style.display = "block";
+                downloadLink.style.marginTop = "10px";
+
+                resultElement.innerHTML = `
             <h4>${response.title || "Extracted Content"}</h4>`;
-            resultElement.appendChild(downloadLink);
-            displayQuizletFlashcards(jsonArray);
-          })
+                resultElement.appendChild(downloadLink);
+                displayQuizletFlashcards(jsonArray);
+              })
 
-          .catch((error) => {
-            console.log(error);
-            resultElement.innerHTML = `<p>Error generating flashcards: ${error}</p>`;
-          });
-
-        // Save to clipboard
-        navigator.clipboard.writeText(response.content).catch((err) => {
-          console.error("Could not copy text: ", err);
-        });
+              .catch((error) => {
+                console.log(error);
+                resultElement.innerHTML = `<p>Error generating flashcards: ${error}</p>`;
+              });
+          }
+        );
       }
     );
   } catch (error) {
@@ -672,36 +695,96 @@ function displayQuizletFlashcards(flashcardsData) {
 async function summarizeContent() {
   const resultElement = document.getElementById("result");
   const summaryElement = document.getElementById("result");
+  const pref = document.getElementById("pref").value.trim();
   summaryElement.innerHTML =
     '<div class="load-div"> <div class="loader"></div> <div>Summarizing article...</div> </div>';
   resultElement.style.display = "flex";
 
-  try {
-    const [tab] = await chrome.tabs.query({
-      active: true,
-      currentWindow: true,
-    });
+  chrome.storage.sync.get(["apiKey"], async function (result) {
+    const apiKey = result.apiKey ? result.apiKey : null;
 
-    chrome.scripting.executeScript(
-      {
-        target: { tabId: tab.id },
-        func: () => document.body.innerText,
-      },
-      async (injectionResults) => {
-        const pageText = injectionResults?.[0]?.result;
-        const pref = document.getElementById("pref").value.trim();
-        const response = await summarizeArticle(pageText, pref);
+    try {
+      const [tab] = await chrome.tabs.query({
+        active: true,
+        currentWindow: true,
+      });
 
-        if (response.success) {
-          // resultElement.innerHTML = `<h4>Summary</h4><p>${response.content}</p>`;
-          summaryElement.innerHTML = `<p>${response.content}</p>`;
-        } else {
-          resultElement.innerHTML = `<p>Failed to summarize: ${response.error}</p>`;
+      chrome.runtime.sendMessage(
+        { action: "getPDFStatus", tabId: tab.id },
+        (response) => {
+          if (chrome.runtime.lastError) {
+            resultElement.innerHTML = `<p>Error: ${chrome.runtime.lastError.message}</p>`;
+            return;
+          }
+
+          if (!response || !response.success) {
+            resultElement.innerHTML = `<p>Extraction failed: ${
+              response?.error || "Unknown error"
+            }</p>`;
+            return;
+          }
+
+          const isPDF = response.isPDF;
+          console.log(response);
+          console.log(`Is ${tab.id} a pdf?`, isPDF);
+          if (isPDF) {
+            chrome.runtime.sendMessage(
+              {
+                action: "extract",
+                tabId: tab.id,
+                apiKey: apiKey,
+                pref: pref,
+                isPDF: isPDF,
+              },
+              (response) => {
+                console.log("Got PDF for summary: ", response);
+                if (chrome.runtime.lastError) {
+                  resultElement.innerHTML = `<p>Error: ${chrome.runtime.lastError.message}</p>`;
+                  return;
+                }
+
+                if (!response || !response.success) {
+                  resultElement.innerHTML = `<p>Extraction failed: ${
+                    response?.error || "Unknown error"
+                  }</p>`;
+                  return;
+                }
+                console.log("Got PDF for summary: ", response);
+                summarizeArticle(response.content, pref).then((r) => {
+                  if (r.success) {
+                    // resultElement.innerHTML = `<h4>Summary</h4><p>${response.content}</p>`;
+                    summaryElement.innerHTML = `<p>${r.content}</p>`;
+                  } else {
+                    resultElement.innerHTML = `<p>Failed to summarize: ${r.error}</p>`;
+                  }
+                });
+              }
+            );
+          } else {
+            chrome.scripting.executeScript(
+              {
+                target: { tabId: tab.id },
+                func: () => document.body.innerText,
+              },
+              async (injectionResults) => {
+                const pageText = injectionResults?.[0]?.result;
+
+                const response = await summarizeArticle(pageText, pref);
+
+                if (response.success) {
+                  // resultElement.innerHTML = `<h4>Summary</h4><p>${response.content}</p>`;
+                  summaryElement.innerHTML = `<p>${response.content}</p>`;
+                } else {
+                  resultElement.innerHTML = `<p>Failed to summarize: ${response.error}</p>`;
+                }
+              }
+            );
+          }
         }
-      }
-    );
-  } catch (err) {
-    console.error(err);
-    resultElement.innerHTML = `<p>Error: ${err.message}</p>`;
-  }
+      );
+    } catch (err) {
+      console.error(err);
+      resultElement.innerHTML = `<p>Error: ${err.message}</p>`;
+    }
+  });
 }
