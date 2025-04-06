@@ -73,7 +73,10 @@ export function displayCurrentSiteHighlights(highlights, currentHostname) {
     // Add a title showing the current site
     const siteHeader = document.createElement("div");
     siteHeader.className = "site-header";
-    siteHeader.textContent = `Highlights from ${currentHostname}`;
+    // Extract just the domain part for display to keep UI clean
+    const displayHostname = currentHostname.split('/')[0];
+    const path = currentHostname.substring(displayHostname.length);
+    siteHeader.textContent = `Highlights from ${displayHostname}${path ? path : ''}`;
     siteHeader.style.fontWeight = "bold";
     siteHeader.style.marginBottom = "10px";
     siteHeader.style.color = "white";
@@ -166,15 +169,25 @@ export function clearAllHighlights() {
     return;
   }
 
+  // Extract the domain part for display
+  const displayDomain = currentWebsite.split('/')[0];
+  const path = currentWebsite.substring(displayDomain.length);
+  const displayLocation = path ? `${displayDomain}${path}` : displayDomain;
+  
   if (
     confirm(
-      `Are you sure you want to clear all highlights from ${currentWebsite}?`
+      `Are you sure you want to clear all highlights from ${displayLocation}?`
     )
   ) {
+    // Need to construct a complete URL for clearing highlights
+    // The currentWebsite now contains domain + path
+    let urlPrefix = 'https://';
+    
+    // We have a domain + path format
     chrome.runtime.sendMessage(
       {
         action: "clearHighlights",
-        websiteUrl: `https://${currentWebsite}`,
+        websiteUrl: `${urlPrefix}${currentWebsite}`,
       },
       function (response) {
         if (response && response.success) {
@@ -229,10 +242,13 @@ export async function generateFromHighlights() {
     }
 
     // Get saved highlights for the current website only
+    // Construct proper URL with the domain + path
+    let urlPrefix = 'https://';
+    
     chrome.runtime.sendMessage(
       {
         action: "getHighlights",
-        websiteUrl: `https://${currentWebsite}`,
+        websiteUrl: `${urlPrefix}${currentWebsite}`,
       },
       function (response) {
         if (!response || !response.success) {
@@ -260,8 +276,13 @@ export async function generateFromHighlights() {
           return;
         }
 
+        // Extract domain and path parts for display
+        const displayDomain = currentWebsite.split('/')[0];
+        const path = currentWebsite.substring(displayDomain.length);
+        const displayLocation = path ? `${displayDomain}${path}` : displayDomain;
+        
         // Add website info to title
-        const websiteInfo = ` from ${currentWebsite}`;
+        const websiteInfo = ` from ${displayLocation}`;
 
         // Extract the full article for context and generate cards
         chrome.tabs.sendMessage(
@@ -342,7 +363,9 @@ export async function generateFromHighlights() {
               const downloadLink = document.createElement("a");
 
               // Create a title for the download that includes the website info
-              const title = `${currentWebsite}_flashcards`;
+              // Create a sanitized filename from the path
+              const sanitizedPath = path ? path.replace(/[^a-z0-9]/gi, '_') : '';
+              const title = `${displayDomain}${sanitizedPath}_flashcards`;
 
               downloadLink.download = `${title}.csv`;
               downloadLink.href = url;
@@ -352,7 +375,7 @@ export async function generateFromHighlights() {
               downloadLink.className = "download-button";
 
               // Display the extracted content with website info
-              const displayTitle = `Flashcards from ${currentWebsite}`;
+              const displayTitle = `Flashcards from ${displayLocation}`;
               
               // Create button container
               const buttonContainer = document.createElement("div");

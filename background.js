@@ -18,9 +18,14 @@ function getHostnameFromUrl(url) {
     if (url.startsWith("chrome://")) return "chrome-internal";
     if (url.startsWith("chrome-extension://")) return "extension";
 
-    // Parse the URL and extract the hostname
-    const hostname = new URL(url).hostname;
-    return hostname || "unknown";
+    // Parse the URL and extract the hostname and pathname
+    const urlObj = new URL(url);
+    const hostname = urlObj.hostname;
+    const pathname = urlObj.pathname;
+    
+    // Combine hostname and pathname (excluding trailing slashes) to create a unique page identifier
+    // This ensures different pages on the same domain have different keys
+    return hostname + pathname.replace(/\/$/, "") || "unknown";
   } catch (error) {
     console.error("Error parsing URL:", error);
     return "unknown";
