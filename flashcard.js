@@ -337,10 +337,9 @@ export async function generateFlashcards(text, userPreference, numFlashcards) {
       }
 
       const prompt = `
-      Create ${numFlashcards} flashcards based on the following article. Only include facts, definitions, or concepts that would help someone understand or study the topic. ${
-        userPreference ? userPreference : ""
-      }
-      Your output should imitate a CSV file where each row is a flashcard in the following format: Question, Answer.
+      Create ${numFlashcards} flashcards based on the following article. Only include facts, definitions, or concepts that would help someone understand or study the topic. 
+      ${userPreference ? userPreference : ""}
+      Your output should imitate a CSV file where each row is a flashcard in the following format: Question, Answer but don't include the header or file type.
       Article:
       \n\n${text}
       `;
