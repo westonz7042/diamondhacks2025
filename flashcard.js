@@ -19,7 +19,7 @@ export async function generateFlashcards(text, userPreference) {
       const prompt = `
 
       Output MUST be an array of json objects with the format: "front":question, "back":answer. Do not include the word json at the start of the output for labeling. I understand it is helpful, but you MUST not include it, the word json at the beginning.
-      Create high-quality flashcards based on the following article. Follow these essential guidelines and create as many as you see fit:
+      Create high-quality flashcards based on the following article. Follow these essential guidelines and create AT MOST fifteen flashcards:
 
       
       • Each card must focus on ONE specific concept (atomic knowledge)
