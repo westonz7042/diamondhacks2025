@@ -66,7 +66,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   document.getElementById("num-cards").addEventListener("change", function () {
-    const pref = document.getElementById("num-cards").value.trim();
+    const numCards = document.getElementById("num-cards").value.trim();
     chrome.storage.sync.set({ numCards: numCards });
   });
 });

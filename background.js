@@ -1,4 +1,5 @@
 // background.js
+
 // We get the API key from storage now
 let API_KEY = "";
 
@@ -54,7 +55,7 @@ async function cleanupTextWithAPI(text, apiKey) {
   }
 }
 
-// This listener will be called when the popup requests content extraction
+// This listener will be called when the popup requests content extraction or when selection-based generation is requested
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "extract") {
     console.log("Extraction requested for tab:", request.tabId);
@@ -107,6 +108,114 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }).catch(error => {
       console.error("Error injecting content script:", error);
       sendResponse({ success: false, error: error.message });
+    });
+    
+    return true; // Keep the message channel open for async response
+  } 
+  else if (request.action === "generateFromSelection") {
+    console.log("Generating flashcards from selection:", request.content.substring(0, 100) + "...");
+    
+    // Store or use the API key
+    if (request.apiKey) {
+      API_KEY = request.apiKey;
+    } else {
+      // If no API key provided, try to get from storage
+      chrome.storage.sync.get(["apiKey"], function(result) {
+        if (result.apiKey) {
+          API_KEY = result.apiKey;
+        }
+      });
+    }
+    
+    // Make sure we have an API key
+    if (!API_KEY) {
+      console.error("No API key available");
+      sendResponse({ success: false, error: "No API key available. Please enter your API key in the extension popup." });
+      return true;
+    }
+    
+    // Call the Gemini API directly here, rather than using the imported function
+    // This avoids issues with module loading and Chrome storage async behavior
+    const promptText = `
+      Create 1 high-quality flashcard based on the following article. Follow these essential guidelines:
+      
+      • Each card must focus on ONE specific concept (atomic knowledge)
+      • Questions should be precise and unambiguous about what they're asking
+      • Answers must be EXTREMELY concise - 1-2 sentences maximum (10-25 words)
+      • Focus on core concepts, relationships, and techniques rather than trivia
+      • Avoid yes/no questions or questions with binary answers
+      • When referencing authors, use specific names instead of "the author"
+      • Questions should require genuine recall, not just recognition
+      
+      Consider these knowledge types:
+      • For facts: Break complex facts into atomic units
+      • For concepts: Address attributes, similarities/differences, and significance
+      • For procedures: Focus on decision points and critical parameters
+      
+      Your output must be in CSV format with each row as: Question,Answer
+      Do not include headers or file type information.
+      
+      Article:
+      ${request.content}
+    `;
+    
+    fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [{ text: promptText }],
+          },
+        ],
+      }),
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.error) {
+        throw new Error(data.error.message || "API error");
+      }
+      
+      const csvOutput = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!csvOutput) {
+        throw new Error("No flashcard content returned");
+      }
+      
+      // Clean up any headers like "Question,Answer"
+      const lines = csvOutput.trim().split("\n");
+      while (
+        lines.length > 0 && 
+        lines[0].toLowerCase().includes("question") && 
+        lines[0].toLowerCase().includes("answer")
+      ) {
+        lines.shift();
+      }
+      
+      const cleanedCsv = lines.join("\n");
+      console.log("Flashcards generated successfully:", cleanedCsv);
+      
+      // Create a data URL with the CSV content
+      // Use encodeURIComponent to handle special characters properly
+      const dataUrl = 'data:text/csv;charset=utf-8,' + encodeURIComponent(cleanedCsv);
+      
+      // Download the file using the data URL
+      chrome.downloads.download({
+        url: dataUrl,
+        filename: `${request.title.replace(/[^\w\s]/gi, "")}_flashcards.csv`,
+        saveAs: false // Don't prompt user where to save
+      }, downloadId => {
+        if (chrome.runtime.lastError) {
+          console.error("Download failed:", chrome.runtime.lastError);
+          sendResponse({ success: false, error: chrome.runtime.lastError.message });
+        } else {
+          console.log("Download initiated with ID:", downloadId);
+          sendResponse({ success: true });
+        }
+      });
+    })
+    .catch(error => {
+      console.error("Error generating flashcards:", error);
+      sendResponse({ success: false, error: error.message || "Failed to generate flashcards" });
     });
     
     return true; // Keep the message channel open for async response
