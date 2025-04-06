@@ -23,7 +23,12 @@
   },
   "content_scripts": [
     {
-      "js": ["libs/pdf.min.js", "readability.js", "content.js"],
+      "js": [
+        "libs/pdf.min.js",
+        "libs/turndown.js",
+        "libs/readability.js",
+        "content.js"
+      ],
       "matches": ["<all_urls>"]
     }
   ],

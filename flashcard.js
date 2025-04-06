@@ -29,6 +29,7 @@ export async function generateFlashcards(text, userPreference) {
       • Avoid yes/no questions or questions with binary answers
       • When referencing authors, use specific names instead of "the author"
       • Questions should require genuine recall, not just recognition
+      • Do not provide any HTML syntax, or use HTML-injection-safe syntax
       
       Consider these knowledge types:
       • For facts: Break complex facts into atomic units
