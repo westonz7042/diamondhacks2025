@@ -7,7 +7,7 @@ Created by Michael, Philip, Vincent, and Weston for DiamondHacks 2025.
 ## Features
 
 - Extract and clean content from any web page
-- Generate high-quality flashcards with AI
+- Generate high-quality flashcards and summaries with AI
 - Support for PDF documents
 - Save and manage highlights across websites
 - Direct export to Anki decks
@@ -25,13 +25,15 @@ Created by Michael, Philip, Vincent, and Weston for DiamondHacks 2025.
 
 1. Navigate to any web page with content you want to learn
 2. Click the extension icon in your Chrome toolbar
-3. Enter your API key (required for AI-powered flashcard generation)
+3. Enter your Gemini API key (required for AI-powered flashcard generation)
 4. Choose your preferred options
 5. Click one of the generation buttons:
-   - "Extract & Generate from Article" - processes the entire article
-   - "Generate Cards from Highlights" - processes only text you've highlighted
+   - "Generate Summary" - summarizes the entire article
+   - "Generate Flashcards" - processes the entire article
+   - "Generate Cards from Highlights" - processes only text you've highlighted and saved
 
 After generation, you can:
+- Read a summary of the page
 - View and flip through the generated flashcards in the popup
 - Download the flashcards as a CSV file
 - Send the flashcards directly to Anki (see setup below)
