@@ -695,6 +695,7 @@ function displayQuizletFlashcards(flashcardsData) {
 async function summarizeContent() {
   const resultElement = document.getElementById("result");
   const summaryElement = document.getElementById("result");
+  const pref = document.getElementById("pref").value.trim();
   summaryElement.innerHTML =
     '<div class="load-div"> <div class="loader"></div> <div>Summarizing article...</div> </div>';
   resultElement.style.display = "flex";
@@ -749,7 +750,7 @@ async function summarizeContent() {
                   return;
                 }
                 console.log("Got PDF for summary: ", response);
-                summarizeArticle(response.content).then((r) => {
+                summarizeArticle(response.content, pref).then((r) => {
                   if (r.success) {
                     // resultElement.innerHTML = `<h4>Summary</h4><p>${response.content}</p>`;
                     summaryElement.innerHTML = `<p>${r.content}</p>`;
@@ -768,7 +769,7 @@ async function summarizeContent() {
               async (injectionResults) => {
                 const pageText = injectionResults?.[0]?.result;
 
-                const response = await summarizeArticle(pageText);
+                const response = await summarizeArticle(pageText, pref);
 
                 if (response.success) {
                   // resultElement.innerHTML = `<h4>Summary</h4><p>${response.content}</p>`;
