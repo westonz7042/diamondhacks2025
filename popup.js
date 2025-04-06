@@ -4,19 +4,29 @@ import { generateFlashcards } from "./flashcard.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   // Load saved API key if exists
-  chrome.storage.sync.get(['apiKey'], function(result) {
+  chrome.storage.sync.get(["apiKey"], function (result) {
     if (result.apiKey) {
       document.getElementById("api-key").value = result.apiKey;
     }
   });
-  
+
   // Save API key when it changes
-  document.getElementById("api-key").addEventListener("change", function() {
+  document.getElementById("api-key").addEventListener("change", function () {
     const apiKey = document.getElementById("api-key").value.trim();
-    chrome.storage.sync.set({apiKey: apiKey});
+    chrome.storage.sync.set({ apiKey: apiKey });
   });
-  
+
   document.getElementById("extract").addEventListener("click", extractContent);
+
+  document.getElementById("pref").addEventListener("change", function () {
+    const pref = document.getElementById("pref").value.trim();
+    chrome.storage.sync.set({ pref: pref });
+  });
+
+  document.getElementById("num-cards").addEventListener("change", function () {
+    const pref = document.getElementById("num-cards").value.trim();
+    chrome.storage.sync.set({ numCards: numCards });
+  });
 });
 
 async function extractContent() {
@@ -33,10 +43,18 @@ async function extractContent() {
 
     // Get API key from input
     const apiKey = document.getElementById("api-key").value.trim();
-    
+    const pref = document.getElementById("pref").value.trim();
+    const numCards = document.getElementById("num-cards").value.trim();
+
     // Send message to the background script to handle content extraction
     chrome.runtime.sendMessage(
-      { action: "extract", tabId: tab.id, apiKey: apiKey },
+      {
+        action: "extract",
+        tabId: tab.id,
+        apiKey: apiKey,
+        pref: pref,
+        numCards: numCards,
+      },
       (response) => {
         if (chrome.runtime.lastError) {
           resultElement.innerHTML = `<p>Error: ${chrome.runtime.lastError.message}</p>`;
@@ -50,7 +68,7 @@ async function extractContent() {
           return;
         }
 
-        generateFlashcards(response.content)
+        generateFlashcards(response.content, pref, numCards)
           .then((flashcards) => {
             // Display the extracted content
             resultElement.innerHTML = `
@@ -63,11 +81,9 @@ async function extractContent() {
           });
 
         // Save to clipboard
-        navigator.clipboard
-          .writeText(response.content)
-          .catch((err) => {
-            console.error("Could not copy text: ", err);
-          });
+        navigator.clipboard.writeText(response.content).catch((err) => {
+          console.error("Could not copy text: ", err);
+        });
       }
     );
   } catch (error) {

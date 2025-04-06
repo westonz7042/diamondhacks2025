@@ -44,9 +44,52 @@
   </head>
   <body>
     <h3>Anki Card Creator</h3>
-    <div style="margin-bottom: 15px;">
+    <div style="margin-bottom: 15px">
       <label for="api-key">API Key:</label>
-      <input type="text" id="api-key" placeholder="Enter your API key" style="width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px;">
+      <input
+        type="text"
+        id="api-key"
+        placeholder="Enter your API key"
+        style="
+          width: 100%;
+          padding: 8px;
+          margin-top: 5px;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+        "
+      />
+    </div>
+
+    <div style="margin-bottom: 15px">
+      <label for="pref">Flashcard Preference:</label>
+      <input
+        type="text"
+        id="pref"
+        placeholder="(e.g., 'I want my flashcards to be short and concise')"
+        style="
+          width: 100%;
+          padding: 8px;
+          margin-top: 5px;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+        "
+      />
+    </div>
+
+    <div style="margin-bottom: 15px">
+      <label for="pref"># Flashcards:</label>
+      <input
+        type="number"
+        id="num-cards"
+        value="5"
+        style="
+          width: 25%;
+          padding: 8px;
+          margin-top: 5px;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+        "
+      />
     </div>
     <button id="extract">Extract Main Content</button>
     <div id="clipboard-status"></div>
