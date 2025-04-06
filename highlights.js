@@ -411,28 +411,53 @@ export async function generateFromHighlights() {
                 .join("\n");
 
               // Display the results
+              // Create a blob for CSV download
               const blob = new Blob([csvContent], { type: "text/csv" });
-              const url = URL.createObjectURL(blob);
-              const downloadLink = document.createElement("a");
-
-              // Create a title for the download that includes the website info
+              
               // Create a sanitized filename from the path
               const sanitizedPath = path
                 ? path.replace(/[^a-z0-9]/gi, "_")
                 : "";
-              const title = `${displayDomain}${sanitizedPath}_flashcards`;
+              const sanitizedTitle = `${displayDomain}${sanitizedPath}_flashcards`;
 
-              downloadLink.download = `${title}.csv`;
-              downloadLink.href = url;
-              downloadLink.textContent = "Download as CSV";
-              downloadLink.className = "download-button";
-
-              // Display the extracted content with website info
-              const displayTitle = `Flashcards from ${displayLocation}`;
+              // Get the page title from the tab
+              const displayTitle = tab.title || "Extracted Content";
 
               // Create button container
               const buttonContainer = document.createElement("div");
               buttonContainer.className = "button-container";
+
+              // Create "Save as CSV" button
+              const saveCsvButton = document.createElement("button");
+              saveCsvButton.textContent = "Save Flashcards as CSV";
+              saveCsvButton.className = "save-button";
+              saveCsvButton.onclick = async () => {
+                try {
+                  if ("showSaveFilePicker" in window) {
+                    const handle = await window.showSaveFilePicker({
+                      suggestedName: `${sanitizedTitle}.csv`,
+                      types: [
+                        {
+                          description: "CSV file",
+                          accept: { "text/csv": [".csv"] },
+                        },
+                      ],
+                    });
+
+                    const writable = await handle.createWritable();
+                    await writable.write(blob);
+                    await writable.close();
+                  } else {
+                    const url = URL.createObjectURL(blob);
+                    const fallbackLink = document.createElement("a");
+                    fallbackLink.href = url;
+                    fallbackLink.download = `${sanitizedTitle}.csv`;
+                    fallbackLink.click();
+                  }
+                } catch (err) {
+                  console.error("❌ Save canceled or failed:", err);
+                }
+              };
 
               // Create "Send to Anki" button
               const ankiButton = document.createElement("button");
@@ -442,11 +467,11 @@ export async function generateFromHighlights() {
                 window.sendToAnki(jsonArray, displayTitle);
 
               // Add buttons to container
-              buttonContainer.appendChild(downloadLink);
+              buttonContainer.appendChild(saveCsvButton);
               buttonContainer.appendChild(ankiButton);
 
               resultElement.innerHTML = `
-              <h2 style="text-align: center;" >${displayTitle}</h2>
+              <h2 style="text-align: center; margin: 0px; gap: 0px;">${displayTitle}</h2>
             `;
               resultElement.appendChild(buttonContainer);
               displayQuizletFlashcards(jsonArray);
