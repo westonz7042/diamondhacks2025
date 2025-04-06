@@ -29,7 +29,13 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["libs/pdf.worker.min.js", "libs/pdf.min.js"],
+      "resources": [
+        "libs/pdf.worker.min.js",
+        "libs/pdf.min.js",
+        "flashcards.js",
+        "highlights.js",
+        "summary.js"
+      ],
       "matches": ["<all_urls>"]
     }
   ]
