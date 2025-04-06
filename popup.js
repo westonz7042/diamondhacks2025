@@ -587,6 +587,7 @@ async function summarizeContent() {
   const summaryElement = document.getElementById("result");
   summaryElement.innerHTML =
     '<div class="load-div"> <div class="loader"></div> <div>Summarizing article...</div> </div>';
+  resultElement.style.display = "flex";
 
   try {
     const [tab] = await chrome.tabs.query({
