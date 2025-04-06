@@ -301,7 +301,7 @@ async function extractContent() {
             // Generate flashcards from the cleaned content
 
             generateFlashcards(response.content, pref)
-              .then((flashcardsData) => {
+              .then(async (flashcardsData) => {
                 // Process the JSON response from generateFlashcards
                 let jsonArray;
 
@@ -340,17 +340,34 @@ async function extractContent() {
 
                 // Create download link for CSV
                 const blob = new Blob([csvContent], { type: "text/csv" });
-                const url = URL.createObjectURL(blob);
-                const downloadLink = document.createElement("a");
-                const sanitizedTitle = response.title
-                  ? response.title.replace(/[^\w\s]/gi, "")
-                  : "flashcards";
-                downloadLink.download = `${sanitizedTitle}_flashcards.csv`;
-                downloadLink.href = url;
-                downloadLink.textContent = "Download Flashcards as CSV";
-                downloadLink.style.display = "block";
-                downloadLink.style.marginTop = "10px";
-                downloadLink.className = "download-button";
+                try {
+                  if ("showSaveFilePicker" in window) {
+                    const handle = await window.showSaveFilePicker({
+                      suggestedName: `${sanitizedTitle}_flashcards.csv`,
+                      types: [
+                        {
+                          description: "CSV file",
+                          accept: { "text/csv": [".csv"] },
+                        },
+                      ],
+                    });
+
+                    const writable = await handle.createWritable();
+                    await writable.write(blob);
+                    await writable.close();
+
+                    console.log("✅ File saved successfully");
+                  } else {
+                    // Fallback: auto-download if picker is not supported
+                    const url = URL.createObjectURL(blob);
+                    const fallbackLink = document.createElement("a");
+                    fallbackLink.href = url;
+                    fallbackLink.download = `${sanitizedTitle}_flashcards.csv`;
+                    fallbackLink.click();
+                  }
+                } catch (err) {
+                  console.error("❌ Save canceled or failed:", err);
+                }
 
                 // Create button container
                 const buttonContainer = document.createElement("div");
@@ -364,7 +381,43 @@ async function extractContent() {
                   sendToAnki(jsonArray, response.title || "Extracted Content");
 
                 // Add buttons to container
-                buttonContainer.appendChild(downloadLink);
+
+                //Make CSV button
+                const saveCsvButton = document.createElement("button");
+                saveCsvButton.textContent = "Save Flashcards as CSV";
+                saveCsvButton.className = "save-button"; // Style it however you like
+                saveCsvButton.onclick = async () => {
+                  try {
+                    const sanitizedTitle =
+                      response.title?.replace(/[^\w\s]/gi, "") || "flashcards";
+                    const blob = new Blob([csvContent], { type: "text/csv" });
+
+                    if ("showSaveFilePicker" in window) {
+                      const handle = await window.showSaveFilePicker({
+                        suggestedName: `${sanitizedTitle}_flashcards.csv`,
+                        types: [
+                          {
+                            description: "CSV file",
+                            accept: { "text/csv": [".csv"] },
+                          },
+                        ],
+                      });
+
+                      const writable = await handle.createWritable();
+                      await writable.write(blob);
+                      await writable.close();
+                    } else {
+                      const url = URL.createObjectURL(blob);
+                      const fallbackLink = document.createElement("a");
+                      fallbackLink.href = url;
+                      fallbackLink.download = `${sanitizedTitle}_flashcards.csv`;
+                      fallbackLink.click();
+                    }
+                  } catch (err) {
+                    console.error("❌ Save canceled or failed:", err);
+                  }
+                };
+                buttonContainer.appendChild(saveCsvButton);
                 buttonContainer.appendChild(ankiButton);
 
                 resultElement.innerHTML = `
