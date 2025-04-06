@@ -128,6 +128,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         ankiStatus.style.color = "#dc3545";
         ankiDeckSelect.innerHTML =
           '<option value="">Anki not available</option>';
+
         ankiDeckSelect.disabled = true;
       }
     } catch (error) {
@@ -561,7 +562,9 @@ async function summarizeContent() {
 
                 if (response.success) {
                   // resultElement.innerHTML = `<h4>Summary</h4><p>${response.content}</p>`;
-                  resultElement.innerHTML = `<p>${escapeHTML(response.content)}</p>`;
+                  resultElement.innerHTML = `<p>${escapeHTML(
+                    response.content
+                  )}</p>`;
                 } else {
                   resultElement.innerHTML = `<p>Failed to summarize: ${response.error}</p>`;
                 }

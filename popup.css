@@ -4,6 +4,7 @@ body {
   font-family: Arial, sans-serif;
   background-image: linear-gradient(45deg, #242038, #342040);
   color: #fff;
+  font-family: "Poppins", sans-serif;
 }
 button {
   width: 100%;
@@ -15,6 +16,7 @@ button {
   border-radius: 4px;
   cursor: pointer;
   font-weight: bold;
+  font-family: "Poppins", sans-serif;
 }
 button:hover {
   background-color: #8d86c9;
@@ -32,6 +34,7 @@ button:hover {
   flex-direction: column;
   align-items: center;
   max-width: 500px;
+  font-family: "Poppins", sans-serif;
 }
 
 #hide-key {
@@ -180,6 +183,7 @@ h3 {
   transform-style: preserve-3d;
   cursor: pointer;
   text-align: center;
+  font-family: "Poppins", sans-serif;
 }
 .flashcard.flipped {
   transform: rotateX(180deg);
@@ -197,10 +201,12 @@ h3 {
   justify-content: center;
   padding: 20px;
   box-sizing: border-box;
+  font-family: "Poppins", sans-serif;
 }
 .flashcard-face.back {
   transform: rotateX(-180deg);
   background: #e9f9ff;
+  font-family: "Poppins", sans-serif;
 }
 .flashcard-controls {
   display: flex;
@@ -209,6 +215,7 @@ h3 {
 }
 .button {
   width: 100px;
+  font-family: "Poppins", sans-serif;
 }
 .download-button {
   display: inline-block;
@@ -223,6 +230,7 @@ h3 {
   margin-top: 16px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
   transition: background-color 0.2s ease;
+  font-family: "Poppins", sans-serif;
 }
 
 .download-button:hover {
@@ -244,6 +252,7 @@ h3 {
   transition: background-color 0.2s ease;
   border: none;
   cursor: pointer;
+  font-family: "Poppins", sans-serif;
 }
 
 .anki-button:hover {
