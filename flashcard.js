@@ -21,7 +21,10 @@ export async function generateFlashcards(text, userPreference) {
       Output MUST be an array of json objects with the format: "front":question, "back":answer. Do not include the word json at the start of the output for labeling. I understand it is helpful, but you MUST not include it, the word json at the beginning.
       Create high-quality flashcards based on the following article. Follow these essential guidelines and create AT MOST fifteen flashcards:
 
+      This is primary:
+      ${userPreference ? userPreference : ""}
       
+      What comes next is secondary:
       • Each card must focus on ONE specific concept (atomic knowledge)
       • Questions should be precise and unambiguous about what they're asking
       • Answers must be EXTREMELY concise - 1-2 sentences maximum (10-25 words)
@@ -35,8 +38,8 @@ export async function generateFlashcards(text, userPreference) {
       • For facts: Break complex facts into atomic units
       • For concepts: Address attributes, similarities/differences, and significance
       • For procedures: Focus on decision points and critical parameters
+    
       
-      ${userPreference ? userPreference : ""}
       
       
       
