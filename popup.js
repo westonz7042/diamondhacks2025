@@ -66,12 +66,6 @@ document.addEventListener("DOMContentLoaded", () => {
     chrome.storage.sync.set({ pref: pref });
   });
 
-  //num cards
-  document.getElementById("num-cards").addEventListener("change", function () {
-    const pref = document.getElementById("num-cards").value.trim();
-    chrome.storage.sync.set({ numCards: numCards });
-  });
-
   // Styling
   const checkbox = document.getElementById("show-key");
   checkbox.addEventListener("click", (event) => {
@@ -97,7 +91,6 @@ async function extractContent() {
     // Get API key from input
     const apiKey = document.getElementById("api-key").value.trim();
     const pref = document.getElementById("pref").value.trim();
-    const numCards = document.getElementById("num-cards").value.trim();
 
     // Send message to the background script to handle content extraction
     chrome.runtime.sendMessage(
@@ -106,7 +99,6 @@ async function extractContent() {
         tabId: tab.id,
         apiKey: apiKey,
         pref: pref,
-        numCards: numCards,
       },
       (response) => {
         if (chrome.runtime.lastError) {
@@ -122,9 +114,23 @@ async function extractContent() {
         }
 
         // Generate flashcards from the cleaned content
+
         generateFlashcards(response.content, pref, numCards)
-          .then((flashcards) => {
-            const blob = new Blob([flashcards], { type: "text/csv" });
+          .then((flashcardsArray) => {
+            // resultElement.innerHTML = `</h4><h4>${flashcardsArray}</h4>`;
+            // Convert to CSV string for download
+            // let x = JSON.parse(flashcardsArray);
+            let trimmedArray = flashcardsArray.trim().replace(/^```|```$/g, "");
+            let jsonArray = JSON.parse(trimmedArray);
+            const csvContent = jsonArray
+              .map(({ front, back }) => {
+                const escapedFront = `"${(front || "").replace(/"/g, '""')}"`;
+                const escapedBack = `"${(back || "").replace(/"/g, '""')}"`;
+                return `${escapedFront},${escapedBack}`;
+              })
+              .join("\n");
+
+            const blob = new Blob([csvContent], { type: "text/csv" });
             const url = URL.createObjectURL(blob);
             const downloadLink = document.createElement("a");
             const sanitizedTitle = response.title
@@ -135,13 +141,13 @@ async function extractContent() {
             downloadLink.textContent = "Download Flashcards as CSV";
             downloadLink.style.display = "block";
             downloadLink.style.marginTop = "10px";
-            // Display the extracted content
+
             resultElement.innerHTML = `
-                <h4>${response.title || "Extracted Content"}</h4>
-                <div>${flashcards}</div>`;
+            <h4>${response.title || "Extracted Content"}</h4>`;
             resultElement.appendChild(downloadLink);
-            displayQuizletFlashcards(flashcards);
+            displayQuizletFlashcards(jsonArray);
           })
+
           .catch((error) => {
             console.log(error);
             resultElement.innerHTML = `<p>Error generating flashcards: ${error}</p>`;
@@ -160,16 +166,7 @@ async function extractContent() {
     ).innerHTML = `<p>Error: ${error.message}</p>`;
   }
 }
-function displayQuizletFlashcards(csvText) {
-  const lines = csvText.trim().split("\n");
-  const flashcards = lines.map((line) => {
-    const [question, answer] = line.split(/,(.+)/);
-    return {
-      question: question.replace(/^\"|\"$/g, ""),
-      answer: answer.replace(/^\"|\"$/g, ""),
-    };
-  });
-
+function displayQuizletFlashcards(flashcardsArray) {
   let currentIndex = 0;
 
   const container = document.createElement("div");
@@ -181,11 +178,11 @@ function displayQuizletFlashcards(csvText) {
 
   const front = document.createElement("div");
   front.className = "flashcard-face front";
-  front.textContent = flashcards[currentIndex].question;
+  front.textContent = flashcardsArray[currentIndex].front;
 
   const back = document.createElement("div");
   back.className = "flashcard-face back";
-  back.textContent = flashcards[currentIndex].answer;
+  back.textContent = flashcardsArray[currentIndex].back;
 
   card.appendChild(front);
   card.appendChild(back);
@@ -209,7 +206,7 @@ function displayQuizletFlashcards(csvText) {
   const next = document.createElement("button");
   next.textContent = "Next";
   next.onclick = () => {
-    if (currentIndex < flashcards.length - 1) {
+    if (currentIndex < flashcardsArray.length - 1) {
       currentIndex++;
       updateCard();
     }
@@ -223,8 +220,8 @@ function displayQuizletFlashcards(csvText) {
   document.getElementById("result").appendChild(container);
 
   function updateCard() {
-    front.textContent = flashcards[currentIndex].question;
-    back.textContent = flashcards[currentIndex].answer;
+    front.textContent = flashcardsArray[currentIndex].front;
+    back.textContent = flashcardsArray[currentIndex].back;
     card.classList.remove("flipped"); // reset to front view
   }
 }

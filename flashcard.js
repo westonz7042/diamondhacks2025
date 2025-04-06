@@ -8,9 +8,7 @@ function getEndpoint() {
   return `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
 }
 
-const numFlashcards = 5;
-
-export async function generateFlashcards(text, userPreference, numFlashcards) {
+export async function generateFlashcards(text, userPreference) {
   // Get the latest API key from storage
   return new Promise((resolve, reject) => {
     chrome.storage.sync.get(["apiKey"], async function (result) {
@@ -19,7 +17,10 @@ export async function generateFlashcards(text, userPreference, numFlashcards) {
       }
 
       const prompt = `
-      Create ${numFlashcards} high-quality flashcards based on the following article. Follow these essential guidelines:
+
+      Output MUST be an array of json objects with the format: "front":question, "back":answer. Do not include the word json at the start of the output for labeling. I understand it is helpful, but you MUST not include it, the word json at the beginning.
+      Create high-quality flashcards based on the following article. Follow these essential guidelines and create as many as you see fit:
+
       
       • Each card must focus on ONE specific concept (atomic knowledge)
       • Questions should be precise and unambiguous about what they're asking
@@ -36,11 +37,11 @@ export async function generateFlashcards(text, userPreference, numFlashcards) {
       
       ${userPreference ? userPreference : ""}
       
-      Your output must be in CSV format with each row as: Question,Answer
-      Do not include headers or file type information.
+      
       
       Article:
       \n\n${text}
+      
       `;
 
       try {
@@ -57,7 +58,6 @@ export async function generateFlashcards(text, userPreference, numFlashcards) {
         });
 
         const data = await response.json();
-
         if (data.error) {
           console.error("API Error:", data.error.message);
           reject(data.error.message);
@@ -71,8 +71,6 @@ export async function generateFlashcards(text, userPreference, numFlashcards) {
           return;
         }
         const lines = csvOutput.trim().split("\n");
-
-        //console.log("Lines", lines);
         while (
           lines[0].toLowerCase().includes("question") &&
           lines[0].toLowerCase().includes("answer")
@@ -80,9 +78,6 @@ export async function generateFlashcards(text, userPreference, numFlashcards) {
           lines.shift();
         }
         const csvOutput2 = lines.join("\n");
-
-        //fs.writeFileSync("flashcards.csv", csvOutput2.trim());
-        //console.log("✅ Flashcards saved to flashcards.csv");
         resolve(csvOutput2);
       } catch (error) {
         console.error("Request failed:", error);
