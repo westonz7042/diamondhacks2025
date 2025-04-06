@@ -6,11 +6,8 @@
   "permissions": [
     "activeTab",
     "scripting",
-    "clipboardWrite",
     "storage",
     "downloads",
-    "declarativeNetRequest",
-    "declarativeNetRequestFeedback",
     "webRequest"
   ],
   "host_permissions": ["<all_urls>", "http://localhost:8765/"],
