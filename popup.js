@@ -9,7 +9,6 @@ import {
   addFlashcards,
   syncAnki,
 } from "./ankiConnect.js";
-import TurndownService from "./libs/turndown.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
   // Check if AnkiConnect is available and set up the Anki UI
