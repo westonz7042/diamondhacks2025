@@ -43,7 +43,7 @@ style.textContent = `
 document.head.appendChild(style);
 
 import { generateFlashcards } from "./flashcard.js";
-
+import { summarizeArticle } from "./summary.js";
 document.addEventListener("DOMContentLoaded", () => {
   // Load saved API key if exists
   chrome.storage.sync.get(["apiKey"], function (result) {
@@ -59,7 +59,9 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   document.getElementById("extract").addEventListener("click", extractContent);
-
+  document
+    .getElementById("summarize")
+    .addEventListener("click", summarizeContent);
   // prompts
   document.getElementById("pref").addEventListener("change", function () {
     const pref = document.getElementById("pref").value.trim();
@@ -387,6 +389,10 @@ async function extractContent() {
 
     resultElement.innerHTML =
       '<div class="load-div"> <div class="loader"></div> <div>Extracting and cleaning content...</div> </div>';
+    // const resultElement = document.getElementById("result");
+    const summaryElement = document.getElementById("result");
+    // summaryElement.innerHTML =
+    //   '<div class="load-div"> <div class="loader"></div> <div>Summarizing article...</div> </div>';
 
     resultElement.style.display = "flex";
     // Get the active tab
@@ -574,5 +580,40 @@ function displayQuizletFlashcards(flashcardsData) {
     front.textContent = flashcardsArray[currentIndex].front;
     back.textContent = flashcardsArray[currentIndex].back;
     card.classList.remove("flipped"); // reset to front view
+  }
+}
+async function summarizeContent() {
+  const resultElement = document.getElementById("result");
+  const summaryElement = document.getElementById("result");
+  summaryElement.innerHTML =
+    '<div class="load-div"> <div class="loader"></div> <div>Summarizing article...</div> </div>';
+
+  try {
+    const [tab] = await chrome.tabs.query({
+      active: true,
+      currentWindow: true,
+    });
+
+    chrome.scripting.executeScript(
+      {
+        target: { tabId: tab.id },
+        func: () => document.body.innerText,
+      },
+      async (injectionResults) => {
+        const pageText = injectionResults?.[0]?.result;
+
+        const response = await summarizeArticle(pageText);
+
+        if (response.success) {
+          // resultElement.innerHTML = `<h4>Summary</h4><p>${response.content}</p>`;
+          summaryElement.innerHTML = `<p>${response.content}</p>`;
+        } else {
+          resultElement.innerHTML = `<p>Failed to summarize: ${response.error}</p>`;
+        }
+      }
+    );
+  } catch (err) {
+    console.error(err);
+    resultElement.innerHTML = `<p>Error: ${err.message}</p>`;
   }
 }
