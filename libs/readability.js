@@ -1,3 +1,4 @@
+// https://github.com/mozilla/readability
 /*
  * Copyright (c) 2010 Arc90 Inc
  *
@@ -14,11 +15,12 @@
  * limitations under the License.
  */
 
-(function(global) {
+(function (global) {
   const REGEXPS = {
     // NOTE: These two regular expressions are duplicated in
     // Readability-readerable.js. Please keep both copies in sync.
-    unlikelyCandidates: /-ad-|ai2html|banner|breadcrumbs|combx|comment|community|cover-wrap|disqus|extra|footer|gdpr|header|legends|menu|related|remark|replies|rss|shoutbox|sidebar|skyscraper|social|sponsor|supplemental|ad-break|agegate|pagination|pager|popup|yom-remote/i,
+    unlikelyCandidates:
+      /-ad-|ai2html|banner|breadcrumbs|combx|comment|community|cover-wrap|disqus|extra|footer|gdpr|header|legends|menu|related|remark|replies|rss|shoutbox|sidebar|skyscraper|social|sponsor|supplemental|ad-break|agegate|pagination|pager|popup|yom-remote/i,
     okMaybeItsACandidate: /and|article|body|column|content|main|shadow/i,
   };
 
@@ -33,12 +35,12 @@
     parse() {
       // Clone the document so we don't modify the original
       const doc = this._doc.cloneNode(true);
-      
+
       // Simplistic implementation
       let article = {
         title: this._getArticleTitle(doc),
         content: this._getArticleContent(doc),
-        textContent: this._getArticleText(doc)
+        textContent: this._getArticleText(doc),
       };
 
       return article;
@@ -47,24 +49,28 @@
     _getArticleTitle(doc) {
       // Try to get article title
       let title = doc.title || "";
-      
+
       // Also look at h1 tags
       const h1 = doc.querySelector("h1");
       if (h1) {
         title = h1.textContent;
       }
-      
+
       return title.trim();
     }
 
     _getArticleContent(doc) {
       // Basic implementation - get main elements that might contain the article
-      const possibleElements = Array.from(doc.querySelectorAll("article, main, .main, .content, .article, #content, #main, [role='main']"));
-      
+      const possibleElements = Array.from(
+        doc.querySelectorAll(
+          "article, main, .main, .content, .article, #content, #main, [role='main']"
+        )
+      );
+
       // Find the element with the most text content
       let bestElement = null;
       let maxTextLength = 0;
-      
+
       for (const element of possibleElements) {
         const textLength = element.textContent.length;
         if (textLength > maxTextLength) {
@@ -72,7 +78,7 @@
           bestElement = element;
         }
       }
-      
+
       // If we found a good candidate, use it, otherwise use the body
       if (bestElement && maxTextLength > 500) {
         return bestElement;
@@ -83,15 +89,18 @@
 
     _getArticleText(doc) {
       const content = this._getArticleContent(doc);
-      
+
       // Remove scripts, styles, etc.
-      const scripts = content.querySelectorAll("script, style, svg, img, video");
+      const scripts = content.querySelectorAll(
+        "script, style, svg, img, video"
+      );
       for (const script of Array.from(scripts)) {
         script.remove();
       }
-      
+
       // Get text content
-      return content.textContent.trim()
+      return content.textContent
+        .trim()
         .replace(/[\s\t]+/g, " ")
         .replace(/\n\s*/g, "\n");
     }

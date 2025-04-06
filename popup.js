@@ -9,6 +9,7 @@ import {
   addFlashcards,
   syncAnki,
 } from "./ankiConnect.js";
+import TurndownService from "./libs/turndown.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
   // Check if AnkiConnect is available and set up the Anki UI
@@ -335,7 +336,7 @@ async function extractContent() {
 
                 // Add buttons to container
                 buttonContainer.appendChild(downloadLink);
-                buttonContainer.appendChild(ankiButton);
+                buttonContainer.appendChild(ankiButton);  
 
                 resultElement.innerHTML = `
             <h2 style="text-align: center;">${

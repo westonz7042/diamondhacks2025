@@ -335,7 +335,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     chrome.scripting
       .executeScript({
         target: { tabId: request.tabId },
-        files: ["readability.js", "content.js"],
+        files: ["libs/readability.js", "content.js"],
       })
       .then(() => {
         // Check again if extension context is still valid
