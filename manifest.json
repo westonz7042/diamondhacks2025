@@ -23,11 +23,7 @@
   },
   "content_scripts": [
     {
-      "js": [
-        "libs/pdf.min.js",
-        "libs/readability.js",
-        "content.js"
-      ],
+      "js": ["libs/pdf.min.js", "libs/readability.js", "content.js"],
       "matches": ["<all_urls>"]
     }
   ],
@@ -42,5 +38,8 @@
       ],
       "matches": ["<all_urls>"]
     }
-  ]
+  ],
+  "icons": {
+    "128": "icon128.png"
+  }
 }
