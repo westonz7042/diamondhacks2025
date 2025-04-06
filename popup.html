@@ -10,7 +10,7 @@
     <div
       style="display: flex; flex-direction: row; justify-content: space-between"
     >
-      <h3>Anki Card Creator</h3>
+      <h3>FLASHcard</h3>
       <u id="hide-key"> Show API-key</u>
     </div>
 
@@ -34,19 +34,6 @@
         placeholder="(e.g., 'I want my flashcards to be short and concise')"
       />
     </div>
-    <div
-      style="display: flex; flex-direction: row; justify-content: space-between"
-    >
-      <div class="tab-container">
-        <input class="tab" type="radio" name="mode" id="summarize" checked />
-        <label for="summarize" class="tab-label">Summary </label>
-      </div>
-      <div class="tab-container">
-        <input class="tab" type="radio" name="mode" id="extract" />
-        <label for="extract" class="tab-label">Flashcards </label>
-      </div>
-    </div>
-    <button id="generate">Generate Summary</button>
     <!-- AnkiConnect Settings -->
     <div style="margin-bottom: 15px" id="anki-connect-settings">
       <div
@@ -70,8 +57,20 @@
         style="font-size: 12px; margin-top: 5px; color: #cac4ce"
       ></div>
     </div>
-
-    <button id="summarize">Summarize</button>
+    Options:
+    <div
+      style="display: flex; flex-direction: row; justify-content: space-between; padding-top: 6px"
+    >
+      <div class="tab-container">
+        <input class="tab" type="radio" name="mode" id="summarize" checked />
+        <label for="summarize" class="tab-label">Summary </label>
+      </div>
+      <div class="tab-container">
+        <input class="tab" type="radio" name="mode" id="extract" />
+        <label for="extract" class="tab-label">Flashcards </label>
+      </div>
+    </div>
+    <button id="generate">Generate Summary</button>
     <!-- Saved Highlights Section -->
     <div
       id="saved-highlights-section"

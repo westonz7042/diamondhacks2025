@@ -25,7 +25,6 @@
     {
       "js": [
         "libs/pdf.min.js",
-        "libs/turndown.js",
         "libs/readability.js",
         "content.js"
       ],
