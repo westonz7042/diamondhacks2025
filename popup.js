@@ -150,9 +150,7 @@ async function extractContent() {
             downloadLink.style.marginTop = "10px";
 
             resultElement.innerHTML = `
-            <h4>${
-              response.title || "Extracted Content"
-            }</h4><h4>${trimmedArray}</h4>`;
+            <h4>${response.title || "Extracted Content"}</h4>`;
             resultElement.appendChild(downloadLink);
             displayQuizletFlashcards(jsonArray);
           })
