@@ -8,9 +8,7 @@ function getEndpoint() {
   return `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
 }
 
-const numFlashcards = 5;
-
-export async function generateFlashcards(text, userPreference, numFlashcards) {
+export async function generateFlashcards(text, userPreference) {
   // Get the latest API key from storage
   return new Promise((resolve, reject) => {
     chrome.storage.sync.get(["apiKey"], async function (result) {
@@ -19,7 +17,7 @@ export async function generateFlashcards(text, userPreference, numFlashcards) {
       }
 
       const prompt = `
-      Create ${numFlashcards} high-quality flashcards based on the following article. Follow these essential guidelines:
+      Create high-quality flashcards based on the following article. Follow these essential guidelines and create as many as you see fit:
       
       • Each card must focus on ONE specific concept (atomic knowledge)
       • Questions should be precise and unambiguous about what they're asking

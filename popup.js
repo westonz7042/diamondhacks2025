@@ -66,12 +66,6 @@ document.addEventListener("DOMContentLoaded", () => {
     chrome.storage.sync.set({ pref: pref });
   });
 
-  //num cards
-  document.getElementById("num-cards").addEventListener("change", function () {
-    const pref = document.getElementById("num-cards").value.trim();
-    chrome.storage.sync.set({ numCards: numCards });
-  });
-
   // Styling
   const checkbox = document.getElementById("show-key");
   checkbox.addEventListener("click", (event) => {
@@ -97,7 +91,6 @@ async function extractContent() {
     // Get API key from input
     const apiKey = document.getElementById("api-key").value.trim();
     const pref = document.getElementById("pref").value.trim();
-    const numCards = document.getElementById("num-cards").value.trim();
 
     // Send message to the background script to handle content extraction
     chrome.runtime.sendMessage(
@@ -106,7 +99,6 @@ async function extractContent() {
         tabId: tab.id,
         apiKey: apiKey,
         pref: pref,
-        numCards: numCards,
       },
       (response) => {
         if (chrome.runtime.lastError) {
@@ -122,7 +114,7 @@ async function extractContent() {
         }
 
         // Generate flashcards from the cleaned content
-        generateFlashcards(response.content, pref, numCards)
+        generateFlashcards(response.content, pref)
           .then((flashcards) => {
             const blob = new Blob([flashcards], { type: "text/csv" });
             const url = URL.createObjectURL(blob);
