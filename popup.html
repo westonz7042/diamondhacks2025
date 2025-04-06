@@ -4,97 +4,27 @@
   <head>
     <link rel="stylesheet" href="./popup.css" />
 
-    <style>
-      body {
-        width: 350px;
-        padding: 15px;
-        font-family: Arial, sans-serif;
-        background: #242038;
-        color: #fff;
-      }
-      button {
-        width: 100%;
-        padding: 10px;
-        margin-top: 10px;
-        background-color: #725ac1;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-weight: bold;
-      }
-      button:hover {
-        background-color: #8d86c9;
-      }
-      #result {
-        margin-top: 20px;
-        max-height: 350px;
-        overflow-y: auto;
-        border: 1px solid #ddd;
-        padding: 24px;
-        border-radius: 4px;
-        background-color: #cac4ce;
-        color: #242038;
-        display: none;
-        flex-direction: column;
-        align-items: center;
-        max-width: 500px;
-      }
-      input[type="text"],
-      input[type="password"] {
-        width: 95%;
-        padding: 8px;
-        margin-top: 5px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-      }
-      input[type="text"]:focus,
-      input[type="password"]:focus {
-        background-color: #fbf3ef;
-      }
-      h3 {
-        margin-top: 0;
-        color: #fff;
-      }
-      .loader {
-        border: 2px solid #242038;
-        border-top: 2px solid #cac4ce; /* Blue */
-        border-radius: 50%;
-        width: 0.8em;
-        height: 0.8em;
-        animation: spin 2s linear infinite;
-        margin-right: 6px;
-        overflow: hidden;
-      }
-
-      @keyframes spin {
-        0% {
-          transform: rotate(0deg);
-        }
-        100% {
-          transform: rotate(360deg);
-        }
-      }
-
-      .load-div {
-        display: flex;
-        flex-direction: row;
-      }
-    </style>
-    <script src="libs/pdf.min.js"></script>
+    <script type="module" src="popup.js"></script>
   </head>
   <body>
-    <script type="module" src="popup.js"></script>
-    <h3>Anki Card Creator</h3>
-    <div style="margin-bottom: 5px">
-      <label for="api-key">API Key:</label>
-      <input type="password" id="api-key" placeholder="Enter your API key" />
+    <div
+      style="display: flex; flex-direction: row; justify-content: space-between"
+    >
+      <h3>Anki Card Creator</h3>
+      <u id="hide-key"> Show API-key</u>
     </div>
-    <div style="display: flex; flex-direction: row; margin-bottom: 10px">
-      <input type="checkbox" id="show-key" />
-      <label style="margin-left: 3px; margin-top: 2px" for="show-key"
-        >Show key</label
-      >
+
+    <div id="key-container" style="display: none">
+      <div style="margin-bottom: 5px">
+        <label for="api-key">API Key:</label>
+        <input type="password" id="api-key" placeholder="Enter your API key" />
+      </div>
+      <div style="display: flex; flex-direction: row; margin-bottom: 10px">
+        <input type="checkbox" id="show-key" />
+        <label style="margin-left: 3px; margin-top: 2px" for="show-key"
+          >Show key</label
+        >
+      </div>
     </div>
     <div style="margin-bottom: 15px">
       <label for="pref">Prompt Preference:</label>
@@ -104,7 +34,19 @@
         placeholder="(e.g., 'I want my flashcards to be short and concise')"
       />
     </div>
-    <button id="summarize">Summarize</button>
+    <div
+      style="display: flex; flex-direction: row; justify-content: space-between"
+    >
+      <div class="tab-container">
+        <input class="tab" type="radio" name="mode" id="summarize" checked />
+        <label for="summarize" class="tab-label">Summary </label>
+      </div>
+      <div class="tab-container">
+        <input class="tab" type="radio" name="mode" id="extract" />
+        <label for="extract" class="tab-label">Flashcards </label>
+      </div>
+    </div>
+    <button id="generate">Generate Summary</button>
     <!-- Saved Highlights Section -->
     <div
       id="saved-highlights-section"
@@ -146,11 +88,7 @@
       </button>
     </div>
 
-    <button id="extract">Extract & Generate from Article</button>
-
-    <div id="clipboard-status"></div>
     <div id="result"></div>
-
-    <script type="module" src="popup.js"></script>
+    
   </body>
 </html>

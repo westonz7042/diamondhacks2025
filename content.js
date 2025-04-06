@@ -220,14 +220,13 @@ window.addEventListener('scroll', () => {
 
 // Listen for messages from the background script
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  console.log("Content script received message:", request);
+  console.log("Content script received message:", request.action);
 
   if (request.action === "extractContent") {
     // Handle PDF check and content extraction
     try {
       if (request.isPDF) {
         console.log("Checking for PDF");
-
         extractPDFText().then((text) => {
           const result = { content: text };
           console.log("HI");
@@ -235,9 +234,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           if (request.apiKey) {
             result.apiKey = request.apiKey;
           }
-
-          console.log("Extraction result (PDF):", result);
-
           sendResponse({...result, success: true});
         });
       } else {
@@ -248,8 +244,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         if (request.apiKey) {
           result.apiKey = request.apiKey;
         }
-
-        console.log("Extraction result (Page):", result);
         sendResponse(result);
       }
     } catch (error) {

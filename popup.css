@@ -1,0 +1,226 @@
+body {
+  width: 350px;
+  padding: 15px;
+  font-family: Arial, sans-serif;
+  background-image: linear-gradient(45deg, #242038, #342040);
+  color: #fff;
+}
+button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  background-color: #725ac1;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+button:hover {
+  background-color: #8d86c9;
+}
+#result {
+  margin-top: 20px;
+  max-height: 350px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  padding: 12px;
+  border-radius: 4px;
+  background-color: RGBA(255, 255, 255, 0.5);
+  color: #000;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  max-width: 500px;
+}
+
+#hide-key {
+  display: block;
+  margin-top: 0.17em;
+  color: #725ac1;
+  cursor: pointer;
+  user-select: none;
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px); /* Start above the viewport */
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0); /* End at normal position */
+  }
+}
+
+@keyframes fadeOut {
+  0% {
+    opacity: 1;
+    transform: translateY(0); /* Start at normal position */
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-20px); /* End above the viewport */
+  }
+}
+
+/* Fade-in effect when visible */
+.fade-in {
+  animation: fadeIn 0.5s forwards; /* 0.5s for fade-in */
+  display: block;
+}
+
+/* Fade-out effect when hidden */
+.fade-out {
+  animation: fadeOut 0.5s forwards; /* 0.5s for fade-out */
+  display: block;
+}
+
+input[type="text"],
+input[type="password"] {
+  color: #fff;
+  width: 95%;
+  padding: 8px;
+  margin-top: 5px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: RGBA(255, 255, 255, 0);
+}
+input[type="text"]::placeholder,
+input[type="password"]::placeholder {
+  color: RGBA(255, 255, 255, 0.7);
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus {
+  background-color: RGBA(255, 255, 255, 0.1);
+}
+
+h3 {
+  margin-top: 0;
+  color: #fff;
+}
+
+.loader {
+  border: 2px solid #242038;
+  border-top: 2px solid #cac4ce; /* Blue */
+  border-radius: 50%;
+  width: 0.8em;
+  height: 0.8em;
+  animation: spin 2s linear infinite;
+  margin-right: 6px;
+  overflow: hidden;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.load-div {
+  display: flex;
+  flex-direction: row;
+}
+
+.tab-container {
+  display: inline-block; /* Keeps them in a row */
+  width: 48%;
+  height: 40px; /* Adjust as needed */
+  position: relative;
+}
+
+.tab {
+  display: none;
+}
+
+.tab-label {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: RGBA(255, 255, 255, 0);
+  text-align: center;
+  line-height: 40px; /* Center text vertically */
+  color: RGBA(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: background-color 0.3s;
+  border-radius: 5px;
+}
+
+.tab:checked + .tab-label {
+  background-color: RGBA(
+    255,
+    255,
+    255,
+    0.1
+  ); /* Change color when the radio is checked */
+  color: #fff;
+  border: 1px solid #fff;
+}
+
+.flashcard-container {
+  margin-top: 20px;
+  width: 90%;
+  perspective: 1000px;
+}
+.flashcard {
+  width: 100%;
+  max-width: 1000px;
+  height: 140px;
+  margin: 0 auto 10px;
+  position: relative;
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+  cursor: pointer;
+  text-align: center;
+}
+.flashcard.flipped {
+  transform: rotateX(180deg);
+}
+.flashcard-face {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  background: #f9f9f9;
+  border: 1px solid #888;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+}
+.flashcard-face.back {
+  transform: rotateX(-180deg);
+  background: #e9f9ff;
+}
+.flashcard-controls {
+  display: flex;
+  justify-content: space-between;
+  margin: 10px;
+}
+.button {
+  width: 100px;
+}
+.download-button {
+  display: inline-block;
+  padding: 10px 16px;
+  background-color: #7d63f3;
+  color: white;
+  text-align: center;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 0.95rem;
+  margin-top: 16px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.2s ease;
+}
+
+.download-button:hover {
+  background-color: #6c54e6;
+}
