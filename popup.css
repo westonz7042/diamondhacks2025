@@ -23,7 +23,7 @@ button:hover {
 }
 #result {
   margin-top: 20px;
-  max-height: 350px;
+  max-height: 450px;
   overflow-y: auto;
   border: 1px solid #ddd;
   padding: 12px;
@@ -264,4 +264,33 @@ h3 {
   justify-content: center;
   align-items: center;
   margin-top: 16px;
+}
+
+#result h4 {
+  font-size: 16px; /* Larger font size for headings */
+  font-weight: bold;
+  color: #242038; /* Darker color for better contrast */
+  margin-bottom: 10px;
+  text-align: left;
+}
+
+#result p {
+  font-size: 12px; /* Slightly smaller font size for main text */
+  line-height: 1.6; /* Maintain good readability */
+  color: #242038;
+  margin-bottom: 10px;
+}
+
+#result ul {
+  margin: 12px 0;
+  list-style-type: disc;
+  text-align: left;
+  width: 100%;
+}
+
+#result li {
+  font-size: 12px; /* Match the main text size */
+  line-height: 1.6;
+  color: #242038;
+  margin-bottom: 8px;
 }
