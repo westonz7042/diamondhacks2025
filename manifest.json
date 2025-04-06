@@ -3,15 +3,8 @@
   "description": "Extracts text from articles and creates Anki cards",
   "version": "1.0",
   "manifest_version": 3,
-  "permissions": [
-    "activeTab",
-    "scripting",
-    "clipboardWrite",
-    "storage"
-  ],
-  "host_permissions": [
-    "<all_urls>"
-  ],
+  "permissions": ["activeTab", "scripting", "clipboardWrite", "storage"],
+  "host_permissions": ["<all_urls>"],
   "action": {
     "default_popup": "popup.html"
   },
@@ -20,7 +13,13 @@
   },
   "content_scripts": [
     {
-      "js": ["content.js"],
+      "js": ["libs/pdf.min.js", "content.js"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["libs/pdf.worker.min.js"],
       "matches": ["<all_urls>"]
     }
   ]

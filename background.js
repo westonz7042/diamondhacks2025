@@ -11,11 +11,13 @@ chrome.runtime.onInstalled.addListener(() => {
   console.log("Extension installed");
 });
 
+const pdfStatus = {}; // key: tabId, value: true/false
+
 // Function to clean up text using Gemini API
 async function cleanupTextWithAPI(text, apiKey) {
   // Use the API key passed from the request
   API_KEY = apiKey;
-  
+
   try {
     const response = await fetch(getEndpoint(), {
       method: "POST",
@@ -56,59 +58,93 @@ async function cleanupTextWithAPI(text, apiKey) {
 
 // This listener will be called when the popup requests content extraction
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === "extract") {
+  if (request.action === "getPDFStatus") {
+    sendResponse({ isPDF: true });
+    //sendResponse({ isPDF: !!pdfStatus[sender.tab.id] });
+    return true;
+  } else if (request.action === "extract") {
     console.log("Extraction requested for tab:", request.tabId);
-    
+
     // Store API key for use by other parts of the extension
     if (request.apiKey) {
-      chrome.storage.sync.set({apiKey: request.apiKey});
+      chrome.storage.sync.set({ apiKey: request.apiKey });
       API_KEY = request.apiKey;
     }
-    
+
     // Execute content script
-    chrome.scripting.executeScript({
-      target: { tabId: request.tabId },
-      files: ["readability.js", "content.js"]
-    }).then(() => {
-      // Now that the content script is injected, send a message to it
-      chrome.tabs.sendMessage(request.tabId, { 
-        action: "extractContent",
-        apiKey: request.apiKey 
-      }, async (response) => {
-        console.log("Got response from content script:", response);
-        
-        if (response && response.success) {
-          try {
-            // Clean up the extracted text
-            console.log("Cleaning up extracted text...");
-            const cleanedResponse = await cleanupTextWithAPI(response.content, request.apiKey);
-            
-            if (cleanedResponse.success) {
-              // Return the cleaned text
-              sendResponse({
-                title: response.title,
-                content: cleanedResponse.content,
-                success: true
-              });
+    chrome.scripting
+      .executeScript({
+        target: { tabId: request.tabId },
+        files: ["readability.js", "content.js"],
+      })
+      .then(() => {
+        // Now that the content script is injected, send a message to it
+        chrome.tabs.sendMessage(
+          request.tabId,
+          {
+            action: "extractContent",
+            apiKey: request.apiKey,
+          },
+          async (response) => {
+            console.log("Got response from content script:", response);
+
+            if (response && response.success) {
+              try {
+                // Clean up the extracted text
+                console.log("Cleaning up extracted text...");
+                const cleanedResponse = await cleanupTextWithAPI(
+                  response.content,
+                  request.apiKey
+                );
+
+                if (cleanedResponse.success) {
+                  // Return the cleaned text
+                  sendResponse({
+                    title: response.title,
+                    content: cleanedResponse.content,
+                    success: true,
+                  });
+                } else {
+                  // If cleanup failed, return the original text
+                  console.warn("Text cleanup failed, returning original text");
+                  sendResponse(response);
+                }
+              } catch (error) {
+                console.error("Error in text cleanup:", error);
+                sendResponse(response); // Return original text if cleanup fails
+              }
             } else {
-              // If cleanup failed, return the original text
-              console.warn("Text cleanup failed, returning original text");
+              // Just pass through the failed response
               sendResponse(response);
             }
-          } catch (error) {
-            console.error("Error in text cleanup:", error);
-            sendResponse(response); // Return original text if cleanup fails
           }
-        } else {
-          // Just pass through the failed response
-          sendResponse(response);
-        }
+        );
+      })
+      .catch((error) => {
+        console.error("Error injecting content script:", error);
+        sendResponse({ success: false, error: error.message });
       });
-    }).catch(error => {
-      console.error("Error injecting content script:", error);
-      sendResponse({ success: false, error: error.message });
-    });
-    
+
     return true; // Keep the message channel open for async response
   }
+});
+
+// Check for PDF
+chrome.webRequest.onHeadersReceived.addListener(
+  (details) => {
+    const isPDF = details.responseHeaders.some(
+      (header) =>
+        header.name.toLowerCase() === "content-type" &&
+        header.value.toLowerCase().includes("application/pdf")
+    );
+
+    pdfStatus[details.tabId] = isPDF;
+  },
+  { urls: ["<all_urls>"], types: ["main_frame"] },
+  ["responseHeaders"]
+);
+
+// Cleanup on tab close
+chrome.tabs.onRemoved.addListener((tabId) => {
+  delete pdfStatus[tabId];
 });
