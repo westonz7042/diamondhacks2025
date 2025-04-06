@@ -56,7 +56,7 @@ function createFloatingButton() {
   if (!floatingButton) {
     floatingButton = document.createElement('div');
     floatingButton.id = 'anki-card-creator-button';
-    floatingButton.textContent = '📝 Create Cards';
+    floatingButton.textContent = '💾 Save Highlight';
     
     // Style the button
     Object.assign(floatingButton.style, {
@@ -100,19 +100,23 @@ function handleFloatingButtonClick() {
   
   if (selectedText.success) {
     // Show that we're processing
-    floatingButton.textContent = '⏳ Processing...';
+    floatingButton.textContent = '⏳ Saving...';
     
-    // Get stored API key
-    chrome.storage.sync.get(['apiKey'], function(result) {
-      if (!result.apiKey) {
-        floatingButton.textContent = '❌ No API key';
+    // Send message to background script to save the highlight
+    chrome.runtime.sendMessage({
+      action: 'saveHighlight',
+      content: selectedText.content,
+      title: selectedText.title
+    }, response => {
+      if (response && response.success) {
+        floatingButton.textContent = '✅ Saved!';
         
-        // Create notification to help user understand the issue
+        // Create a notification to confirm the save
         const notification = document.createElement('div');
         notification.style.position = 'fixed';
         notification.style.bottom = '20px';
         notification.style.right = '20px';
-        notification.style.backgroundColor = '#ff4444';
+        notification.style.backgroundColor = '#4285f4';
         notification.style.color = 'white';
         notification.style.padding = '10px 15px';
         notification.style.borderRadius = '4px';
@@ -120,7 +124,10 @@ function handleFloatingButtonClick() {
         notification.style.zIndex = '10000';
         notification.style.fontFamily = 'Arial, sans-serif';
         notification.style.fontSize = '14px';
-        notification.textContent = 'API key required! Please click the extension icon and enter your Gemini API key.';
+        
+        // Show the count of saved highlights
+        const highlightCount = response.count || 0;
+        notification.textContent = `Highlight saved! (${highlightCount} total). Click the extension icon to create flashcards.`;
         
         document.body.appendChild(notification);
         
@@ -136,61 +143,19 @@ function handleFloatingButtonClick() {
         
         setTimeout(() => {
           hideFloatingButton();
-        }, 3000);
-        return;
+        }, 2000);
+      } else {
+        const errorMsg = response && response.error ? response.error : 'Unknown error';
+        console.error('Error saving highlight:', errorMsg);
+        
+        // Show error message
+        floatingButton.textContent = '❌ Failed';
+        floatingButton.title = errorMsg; // Show error on hover
+        
+        setTimeout(() => {
+          hideFloatingButton();
+        }, 2000);
       }
-      
-      // Send message to background script
-      chrome.runtime.sendMessage({
-        action: 'generateFromSelection',
-        content: selectedText.content,
-        title: selectedText.title,
-        apiKey: result.apiKey
-      }, response => {
-        if (response && response.success) {
-          floatingButton.textContent = '✅ Cards Downloaded!';
-          
-          // Create a notification to let the user know where to find the file
-          const notification = document.createElement('div');
-          notification.style.position = 'fixed';
-          notification.style.bottom = '20px';
-          notification.style.right = '20px';
-          notification.style.backgroundColor = '#4285f4';
-          notification.style.color = 'white';
-          notification.style.padding = '10px 15px';
-          notification.style.borderRadius = '4px';
-          notification.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
-          notification.style.zIndex = '10000';
-          notification.style.fontFamily = 'Arial, sans-serif';
-          notification.style.fontSize = '14px';
-          notification.textContent = 'Flashcards downloaded successfully! Check your downloads folder.';
-          
-          document.body.appendChild(notification);
-          
-          setTimeout(() => {
-            notification.style.opacity = '0';
-            notification.style.transition = 'opacity 0.5s';
-            setTimeout(() => {
-              document.body.removeChild(notification);
-            }, 500);
-          }, 5000);
-          
-          setTimeout(() => {
-            hideFloatingButton();
-          }, 2000);
-        } else {
-          const errorMsg = response && response.error ? response.error : 'Unknown error';
-          console.error('Flashcard generation error:', errorMsg);
-          
-          // Show error message
-          floatingButton.textContent = '❌ Failed';
-          floatingButton.title = errorMsg; // Show error on hover
-          
-          setTimeout(() => {
-            hideFloatingButton();
-          }, 2000);
-        }
-      });
     });
   }
 }

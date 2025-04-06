@@ -10,31 +10,104 @@ function getEndpoint() {
 
 chrome.runtime.onInstalled.addListener(() => {
   console.log("Extension installed");
+  
+  // Initialize saved highlights storage
+  chrome.storage.local.get(['savedHighlights'], function(result) {
+    if (!result.savedHighlights) {
+      chrome.storage.local.set({ savedHighlights: [] });
+    }
+  });
+});
+
+// Functions to manage saved highlights
+function getSavedHighlights() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(['savedHighlights'], function(result) {
+      resolve(result.savedHighlights || []);
+    });
+  });
+}
+
+function saveHighlight(highlight) {
+  return getSavedHighlights().then(highlights => {
+    highlights.push({
+      ...highlight,
+      id: Date.now(), // Use timestamp as unique ID
+      timestamp: new Date().toISOString()
+    });
+    
+    return new Promise((resolve) => {
+      chrome.storage.local.set({ savedHighlights: highlights }, function() {
+        // Update badge to show count of saved highlights
+        updateHighlightBadge(highlights.length);
+        resolve(highlights);
+      });
+    });
+  });
+}
+
+function removeHighlight(highlightId) {
+  return getSavedHighlights().then(highlights => {
+    const updatedHighlights = highlights.filter(h => h.id !== highlightId);
+    
+    return new Promise((resolve) => {
+      chrome.storage.local.set({ savedHighlights: updatedHighlights }, function() {
+        // Update badge to show updated count
+        updateHighlightBadge(updatedHighlights.length);
+        resolve(updatedHighlights);
+      });
+    });
+  });
+}
+
+function clearAllHighlights() {
+  return new Promise((resolve) => {
+    chrome.storage.local.set({ savedHighlights: [] }, function() {
+      // Remove badge when no highlights
+      updateHighlightBadge(0);
+      resolve([]);
+    });
+  });
+}
+
+// Update the extension badge to show number of saved highlights
+function updateHighlightBadge(count) {
+  if (count > 0) {
+    chrome.action.setBadgeText({ text: count.toString() });
+    chrome.action.setBadgeBackgroundColor({ color: '#4285f4' });
+  } else {
+    chrome.action.setBadgeText({ text: '' });
+  }
+}
+
+// Initialize badge on startup
+chrome.storage.local.get(['savedHighlights'], function(result) {
+  const highlights = result.savedHighlights || [];
+  updateHighlightBadge(highlights.length);
 });
 
 // Function to clean up text using Gemini API
-async function cleanupTextWithAPI(text, apiKey) {
+function cleanupTextWithAPI(text, apiKey) {
   // Use the API key passed from the request
   API_KEY = apiKey;
   
-  try {
-    const response = await fetch(getEndpoint(), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              {
-                text: `Extract and clean the content from this webpage text. Keep the important information including title, main body, and key points. Remove navigation elements, ads, footers, and other non-essential content:\n\n${text}`,
-              },
-            ],
-          },
-        ],
-      }),
-    });
-
-    const data = await response.json();
+  return fetch(getEndpoint(), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [
+        {
+          parts: [
+            {
+              text: `Extract and clean the content from this webpage text. Keep the important information including title, main body, and key points. Remove navigation elements, ads, footers, and other non-essential content:\n\n${text}`,
+            },
+          ],
+        },
+      ],
+    }),
+  })
+  .then(response => response.json())
+  .then(data => {
     if (data.error) {
       console.error("API Error:", data.error);
       return { error: data.error.message, success: false };
@@ -49,10 +122,11 @@ async function cleanupTextWithAPI(text, apiKey) {
 
     console.log("✨ Text cleaned successfully");
     return { content: cleanedText, success: true };
-  } catch (error) {
+  })
+  .catch(error => {
     console.error("Text cleanup request failed:", error);
     return { error: error.message, success: false };
-  }
+  });
 }
 
 // This listener will be called when the popup requests content extraction or when selection-based generation is requested
@@ -82,20 +156,25 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           try {
             // Clean up the extracted text
             console.log("Cleaning up extracted text...");
-            const cleanedResponse = await cleanupTextWithAPI(response.content, request.apiKey);
-            
-            if (cleanedResponse.success) {
-              // Return the cleaned text
-              sendResponse({
-                title: response.title,
-                content: cleanedResponse.content,
-                success: true
+            cleanupTextWithAPI(response.content, request.apiKey)
+              .then(cleanedResponse => {
+                if (cleanedResponse.success) {
+                  // Return the cleaned text
+                  sendResponse({
+                    title: response.title,
+                    content: cleanedResponse.content,
+                    success: true
+                  });
+                } else {
+                  // If cleanup failed, return the original text
+                  console.warn("Text cleanup failed, returning original text");
+                  sendResponse(response);
+                }
+              })
+              .catch(error => {
+                console.error("Error in text cleanup:", error);
+                sendResponse(response); // Return original text if cleanup fails
               });
-            } else {
-              // If cleanup failed, return the original text
-              console.warn("Text cleanup failed, returning original text");
-              sendResponse(response);
-            }
           } catch (error) {
             console.error("Error in text cleanup:", error);
             sendResponse(response); // Return original text if cleanup fails
@@ -112,6 +191,61 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     
     return true; // Keep the message channel open for async response
   } 
+  else if (request.action === "saveHighlight") {
+    console.log("Saving highlight:", request.content.substring(0, 50) + "...");
+    
+    // Save the highlight
+    const highlight = {
+      content: request.content,
+      title: request.title,
+      url: sender.tab ? sender.tab.url : null,
+      tabId: sender.tab ? sender.tab.id : null
+    };
+    
+    // Use promise-based approach instead of await
+    saveHighlight(highlight).then(highlights => {
+      sendResponse({ 
+        success: true, 
+        message: "Highlight saved successfully",
+        count: highlights.length
+      });
+    }).catch(error => {
+      console.error("Error saving highlight:", error);
+      sendResponse({ 
+        success: false, 
+        error: error.message || "Failed to save highlight" 
+      });
+    });
+    
+    return true; // Keep the message channel open for async response
+  }
+  else if (request.action === "getHighlights") {
+    getSavedHighlights().then(highlights => {
+      sendResponse({ success: true, highlights });
+    }).catch(error => {
+      sendResponse({ success: false, error: error.message });
+    });
+    
+    return true; // Keep the message channel open for async response
+  }
+  else if (request.action === "removeHighlight") {
+    removeHighlight(request.highlightId).then(highlights => {
+      sendResponse({ success: true, highlights });
+    }).catch(error => {
+      sendResponse({ success: false, error: error.message });
+    });
+    
+    return true; // Keep the message channel open for async response
+  }
+  else if (request.action === "clearHighlights") {
+    clearAllHighlights().then(() => {
+      sendResponse({ success: true });
+    }).catch(error => {
+      sendResponse({ success: false, error: error.message });
+    });
+    
+    return true; // Keep the message channel open for async response
+  }
   else if (request.action === "generateFromSelection") {
     console.log("Generating flashcards from selection:", request.content.substring(0, 100) + "...");
     
