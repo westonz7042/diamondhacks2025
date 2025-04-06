@@ -31,51 +31,50 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
   if (request.action === "extractContent") {
     // Handle PDF check and content extraction
-    checkIfPDF(request, sendResponse);
+    try {
+      if (request.isPDF) {
+        console.log("Checking for PDF");
+
+        extractPDFText().then((text) => {
+          const result = { content: text };
+          console.log("HI");
+          // Pass along the API key with the result
+          if (request.apiKey) {
+            result.apiKey = request.apiKey;
+          }
+
+          console.log("Extraction result (PDF):", result);
+
+          sendResponse({...result, success: true});
+        });
+      } else {
+        console.log("Extracting content from page");
+        const result = extractPageContent();
+
+        // Pass along the API key with the result
+        if (request.apiKey) {
+          result.apiKey = request.apiKey;
+        }
+
+        console.log("Extraction result (Page):", result);
+        sendResponse(result);
+      }
+    } catch (error) {
+      console.error("Error in checkIfPDF or extraction:", error);
+      sendResponse({ success: false, error: error.message });
+    }
   }
 
   return true; // Keep the message channel open for async response
 });
 
-// Function to check if the page is a PDF and then extract the content
-async function checkIfPDF(request, sendResponse) {
-  try {
-    const pdfStatusResponse = await new Promise((resolve) => {
-      chrome.runtime.sendMessage({ action: "getPDFStatus" }, resolve);
-    });
-
-    console.log("Received pdf status message: ", pdfStatusResponse);
-    if (pdfStatusResponse?.isPDF) {
-      const text = await extractPDFText();
-      const result = { content: text };
-
-      // Pass along the API key with the result
-      if (request.apiKey) {
-        result.apiKey = request.apiKey;
-      }
-
-      console.log("Extraction result (PDF):", result);
-      sendResponse(result);
-    } else {
-      console.log("Extracting content from page");
-      const result = extractPageContent();
-
-      // Pass along the API key with the result
-      if (request.apiKey) {
-        result.apiKey = request.apiKey;
-      }
-
-      console.log("Extraction result (Page):", result);
-      sendResponse(result);
-    }
-  } catch (error) {
-    console.error("Error in checkIfPDF or extraction:", error);
-    sendResponse({ success: false, error: error.message });
-  }
-}
-
 async function extractPDFText() {
   const pdfjsLib = window["pdfjs-dist/build/pdf"];
+  if (!pdfjsLib) {
+    console.error("pdfjsLib is not loaded properly.");
+    return;
+  }
+
   pdfjsLib.GlobalWorkerOptions.workerSrc = chrome.runtime.getURL(
     "libs/pdf.worker.min.js"
   );
@@ -92,6 +91,6 @@ async function extractPDFText() {
     const pageText = content.items.map((item) => item.str).join(" ");
     text += pageText + "\n";
   }
-
+  console.log("Got PDF data:", text);
   return text;
 }

@@ -92,14 +92,9 @@ async function extractContent() {
     const apiKey = document.getElementById("api-key").value.trim();
     const pref = document.getElementById("pref").value.trim();
 
-    // Send message to the background script to handle content extraction
+    // check if page is pdf
     chrome.runtime.sendMessage(
-      {
-        action: "extract",
-        tabId: tab.id,
-        apiKey: apiKey,
-        pref: pref,
-      },
+      { action: "getPDFStatus", tabId: tab.id },
       (response) => {
         if (chrome.runtime.lastError) {
           resultElement.innerHTML = `<p>Error: ${chrome.runtime.lastError.message}</p>`;
@@ -113,50 +108,78 @@ async function extractContent() {
           return;
         }
 
-        // Generate flashcards from the cleaned content
+        const isPDF = response.isPDF;
+        console.log(response);
+        console.log(`Is ${tab.id} a pdf?`, isPDF);
 
-        generateFlashcards(response.content, pref, numCards)
-          .then((flashcardsArray) => {
-            // resultElement.innerHTML = `</h4><h4>${flashcardsArray}</h4>`;
-            // Convert to CSV string for download
-            // let x = JSON.parse(flashcardsArray);
-            let trimmedArray = flashcardsArray.trim().replace(/^```|```$/g, "");
-            let jsonArray = JSON.parse(trimmedArray);
-            const csvContent = jsonArray
-              .map(({ front, back }) => {
-                const escapedFront = `"${(front || "").replace(/"/g, '""')}"`;
-                const escapedBack = `"${(back || "").replace(/"/g, '""')}"`;
-                return `${escapedFront},${escapedBack}`;
-              })
-              .join("\n");
+        // Send message to the background script to handle content extraction
+        chrome.runtime.sendMessage(
+          {
+            action: "extract",
+            tabId: tab.id,
+            apiKey: apiKey,
+            pref: pref,
+            isPDF: isPDF,
+          },
+          (response) => {
+            if (chrome.runtime.lastError) {
+              resultElement.innerHTML = `<p>Error: ${chrome.runtime.lastError.message}</p>`;
+              return;
+            }
 
-            const blob = new Blob([csvContent], { type: "text/csv" });
-            const url = URL.createObjectURL(blob);
-            const downloadLink = document.createElement("a");
-            const sanitizedTitle = response.title
-              ? response.title.replace(/[^\w\s]/gi, "")
-              : "flashcards";
-            downloadLink.download = `${sanitizedTitle}_flashcards.csv`;
-            downloadLink.href = url;
-            downloadLink.textContent = "Download Flashcards as CSV";
-            downloadLink.style.display = "block";
-            downloadLink.style.marginTop = "10px";
+            if (!response || !response.success) {
+              resultElement.innerHTML = `<p>Extraction failed: ${
+                response?.error || "Unknown error"
+              }</p>`;
+              return;
+            }
 
-            resultElement.innerHTML = `
+            // Generate flashcards from the cleaned content
+            console.log("Got PDF data", response.content)
+            generateFlashcards(response.content, pref)
+              .then((flashcardsArray) => {
+                // resultElement.innerHTML = `</h4><h4>${flashcardsArray}</h4>`;
+                // Convert to CSV string for download
+                // let x = JSON.parse(flashcardsArray);
+                let trimmedArray = flashcardsArray
+                  .trim()
+                  .replace(/^```|```$/g, "");
+                let jsonArray = JSON.parse(trimmedArray);
+                const csvContent = jsonArray
+                  .map(({ front, back }) => {
+                    const escapedFront = `"${(front || "").replace(
+                      /"/g,
+                      '""'
+                    )}"`;
+                    const escapedBack = `"${(back || "").replace(/"/g, '""')}"`;
+                    return `${escapedFront},${escapedBack}`;
+                  })
+                  .join("\n");
+
+                const blob = new Blob([csvContent], { type: "text/csv" });
+                const url = URL.createObjectURL(blob);
+                const downloadLink = document.createElement("a");
+                const sanitizedTitle = response.title
+                  ? response.title.replace(/[^\w\s]/gi, "")
+                  : "flashcards";
+                downloadLink.download = `${sanitizedTitle}_flashcards.csv`;
+                downloadLink.href = url;
+                downloadLink.textContent = "Download Flashcards as CSV";
+                downloadLink.style.display = "block";
+                downloadLink.style.marginTop = "10px";
+
+                resultElement.innerHTML = `
             <h4>${response.title || "Extracted Content"}</h4>`;
-            resultElement.appendChild(downloadLink);
-            displayQuizletFlashcards(jsonArray);
-          })
+                resultElement.appendChild(downloadLink);
+                displayQuizletFlashcards(jsonArray);
+              })
 
-          .catch((error) => {
-            console.log(error);
-            resultElement.innerHTML = `<p>Error generating flashcards: ${error}</p>`;
-          });
-
-        // Save to clipboard
-        navigator.clipboard.writeText(response.content).catch((err) => {
-          console.error("Could not copy text: ", err);
-        });
+              .catch((error) => {
+                console.log(error);
+                resultElement.innerHTML = `<p>Error generating flashcards: ${error}</p>`;
+              });
+          }
+        );
       }
     );
   } catch (error) {

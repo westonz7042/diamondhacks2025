@@ -59,9 +59,10 @@ async function cleanupTextWithAPI(text, apiKey) {
 // This listener will be called when the popup requests content extraction
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "getPDFStatus") {
-    sendResponse({ isPDF: true });
+    console.log(pdfStatus)
+    sendResponse({ success: true, isPDF: pdfStatus[request.tabId] });
+    console.log("PDF Status requested");
     //sendResponse({ isPDF: !!pdfStatus[sender.tab.id] });
-    return true;
   } else if (request.action === "extract") {
     console.log("Extraction requested for tab:", request.tabId);
 
@@ -84,6 +85,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           {
             action: "extractContent",
             apiKey: request.apiKey,
+            isPDF: request.isPDF
           },
           async (response) => {
             console.log("Got response from content script:", response);
@@ -124,12 +126,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         console.error("Error injecting content script:", error);
         sendResponse({ success: false, error: error.message });
       });
-
-    return true; // Keep the message channel open for async response
   }
+  return true; // Keep the message channel open for async response
 });
 
 // Check for PDF
+// Declare the rule for intercepting requests and checking for PDF
 chrome.webRequest.onHeadersReceived.addListener(
   (details) => {
     const isPDF = details.responseHeaders.some(
@@ -139,10 +141,12 @@ chrome.webRequest.onHeadersReceived.addListener(
     );
 
     pdfStatus[details.tabId] = isPDF;
+    console.log(`Tab ${details.tabId} is PDF: ${isPDF}`);
   },
   { urls: ["<all_urls>"], types: ["main_frame"] },
   ["responseHeaders"]
 );
+
 
 // Cleanup on tab close
 chrome.tabs.onRemoved.addListener((tabId) => {

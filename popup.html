@@ -75,8 +75,10 @@
         flex-direction: row;
       }
     </style>
+    <script src="libs/pdf.min.js"></script>
   </head>
   <body>
+    <script type="module" src="popup.js"></script>
     <h3>Anki Card Creator</h3>
     <div style="margin-bottom: 5px">
       <label for="api-key">API Key:</label>
@@ -100,7 +102,6 @@
     <button id="extract">Extract & Clean Content</button>
     <div id="clipboard-status"></div>
     <div id="result"></div>
-    <script type="module" src="popup.js"></script>
     <button id="test">test</button>
   </body>
 </html>

@@ -63,6 +63,7 @@ export async function generateFlashcards(text, userPreference) {
           reject(data.error.message);
           return;
         }
+        console.log(data);
 
         const csvOutput = data.candidates?.[0]?.content?.parts?.[0]?.text;
         if (!csvOutput) {
@@ -71,6 +72,7 @@ export async function generateFlashcards(text, userPreference) {
           return;
         }
         const lines = csvOutput.trim().split("\n");
+
         while (
           lines[0].toLowerCase().includes("question") &&
           lines[0].toLowerCase().includes("answer")
