@@ -48,18 +48,19 @@ function getSelectedText() {
 }
 
 // Create the floating button element
-let floatingButton = null;
-let selectionTimeout = null;
+// Using window property to prevent duplicate declarations
+window.floatingButton = window.floatingButton || null;
+window.selectionTimeout = window.selectionTimeout || null;
 
 function createFloatingButton() {
   // Create button if it doesn't exist
-  if (!floatingButton) {
-    floatingButton = document.createElement('div');
-    floatingButton.id = 'anki-card-creator-button';
-    floatingButton.textContent = '💾 Save Highlight';
+  if (!window.floatingButton) {
+    window.floatingButton = document.createElement('div');
+    window.floatingButton.id = 'anki-card-creator-button';
+    window.floatingButton.textContent = '💾 Save Highlight';
     
     // Style the button
-    Object.assign(floatingButton.style, {
+    Object.assign(window.floatingButton.style, {
       position: 'absolute',
       zIndex: '9999',
       background: '#4285f4',
@@ -76,22 +77,22 @@ function createFloatingButton() {
     });
     
     // Add hover effect
-    floatingButton.addEventListener('mouseover', () => {
-      floatingButton.style.background = '#3367d6';
+    window.floatingButton.addEventListener('mouseover', () => {
+      window.floatingButton.style.background = '#3367d6';
     });
     
-    floatingButton.addEventListener('mouseout', () => {
-      floatingButton.style.background = '#4285f4';
+    window.floatingButton.addEventListener('mouseout', () => {
+      window.floatingButton.style.background = '#4285f4';
     });
     
     // Add click handler
-    floatingButton.addEventListener('click', handleFloatingButtonClick);
+    window.floatingButton.addEventListener('click', handleFloatingButtonClick);
     
     // Add to document
-    document.body.appendChild(floatingButton);
+    document.body.appendChild(window.floatingButton);
   }
   
-  return floatingButton;
+  return window.floatingButton;
 }
 
 // Handle button click
@@ -100,7 +101,7 @@ function handleFloatingButtonClick() {
   
   if (selectedText.success) {
     // Show that we're processing
-    floatingButton.textContent = '⏳ Saving...';
+    window.floatingButton.textContent = '⏳ Saving...';
     
     // Send message to background script to save the highlight
     chrome.runtime.sendMessage({
@@ -109,7 +110,7 @@ function handleFloatingButtonClick() {
       title: selectedText.title
     }, response => {
       if (response && response.success) {
-        floatingButton.textContent = '✅ Saved!';
+        window.floatingButton.textContent = '✅ Saved!';
         
         // Create a notification to confirm the save
         const notification = document.createElement('div');
@@ -149,8 +150,8 @@ function handleFloatingButtonClick() {
         console.error('Error saving highlight:', errorMsg);
         
         // Show error message
-        floatingButton.textContent = '❌ Failed';
-        floatingButton.title = errorMsg; // Show error on hover
+        window.floatingButton.textContent = '❌ Failed';
+        window.floatingButton.title = errorMsg; // Show error on hover
         
         setTimeout(() => {
           hideFloatingButton();
@@ -186,21 +187,21 @@ function updateFloatingButtonPosition() {
 
 // Hide the floating button
 function hideFloatingButton() {
-  if (floatingButton) {
-    floatingButton.style.display = 'none';
-    floatingButton.textContent = '📝 Save Highlight';
+  if (window.floatingButton) {
+    window.floatingButton.style.display = 'none';
+    window.floatingButton.textContent = '📝 Save Highlight';
   }
 }
 
 // Listen for text selection
 document.addEventListener('mouseup', () => {
   // Clear any existing timeout
-  if (selectionTimeout) {
-    clearTimeout(selectionTimeout);
+  if (window.selectionTimeout) {
+    clearTimeout(window.selectionTimeout);
   }
   
   // Set a small timeout to avoid flickering on normal clicks
-  selectionTimeout = setTimeout(() => {
+  window.selectionTimeout = setTimeout(() => {
     const selection = window.getSelection();
     if (selection && selection.toString().trim().length > 0) {
       updateFloatingButtonPosition();

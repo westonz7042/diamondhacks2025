@@ -68,7 +68,16 @@ document.addEventListener("DOMContentLoaded", async () => {
       );
     } catch (error) {
       console.error("Error sending flashcards to Anki:", error);
-      alert(`Error sending flashcards to Anki: ${error.message}`);
+      
+      // Check for duplicate error messages
+      if (error.message && error.message.includes("duplicate")) {
+        // Create a more user-friendly message for duplicate cards
+        const errorMessage = "Some flashcards couldn't be added because they already exist in your Anki deck.";
+        alert(errorMessage);
+      } else {
+        // Show the original error for other types of errors
+        alert(`Error sending flashcards to Anki: ${error.message}`);
+      }
     } finally {
       // Restore button state regardless of success or failure
       const buttons = document.querySelectorAll(".anki-button");
