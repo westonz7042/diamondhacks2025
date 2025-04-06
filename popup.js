@@ -33,7 +33,7 @@ async function extractContent() {
   try {
     // Show loading state
     const resultElement = document.getElementById("result");
-    resultElement.innerHTML = "<p>Extracting content...</p>";
+    resultElement.innerHTML = "<p>Extracting and cleaning content...</p>";
 
     // Get the active tab
     const [tab] = await chrome.tabs.query({
@@ -45,6 +45,7 @@ async function extractContent() {
     const apiKey = document.getElementById("api-key").value.trim();
     const pref = document.getElementById("pref").value.trim();
     const numCards = document.getElementById("num-cards").value.trim();
+
 
     // Send message to the background script to handle content extraction
     chrome.runtime.sendMessage(
@@ -67,13 +68,27 @@ async function extractContent() {
           }</p>`;
           return;
         }
-
+        
+        // Generate flashcards from the cleaned content
         generateFlashcards(response.content, pref, numCards)
+        
           .then((flashcards) => {
+            const blob = new Blob([flashcards], { type: "text/csv" });
+            const url = URL.createObjectURL(blob);
+            const downloadLink = document.createElement("a");
+            const sanitizedTitle = response.title
+              ? response.title.replace(/[^\w\s]/gi, "")
+              : "flashcards";
+            downloadLink.download = `${sanitizedTitle}_flashcards.csv`;
+            downloadLink.href = url;
+            downloadLink.textContent = "Download Flashcards as CSV";
+            downloadLink.style.display = "block";
+            downloadLink.style.marginTop = "10px";
             // Display the extracted content
             resultElement.innerHTML = `
                 <h4>${response.title || "Extracted Content"}</h4>
                 <div>${flashcards}</div>`;
+            resultElement.appendChild(downloadLink);
           })
           .catch((error) => {
             console.log(error);
