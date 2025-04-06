@@ -80,12 +80,13 @@ document.addEventListener("DOMContentLoaded", () => {
 async function extractContent() {
   try {
     // Show loading state
+    const resultElement = document.getElementById("result");
+    resultElement.innerHTML =
+      '<div class="load-div"> <div class="loader"></div> <div>Extracting and cleaning content...</div> </div>';
     // const resultElement = document.getElementById("result");
-    // resultElement.innerHTML =
-    //   '<div class="load-div"> <div class="loader"></div> <div>Extracting and cleaning content...</div> </div>';
-    const summaryElement = document.getElementById("summary-content");
-    summaryElement.innerHTML =
-      '<div class="load-div"> <div class="loader"></div> <div>Summarizing article...</div> </div>';
+    const summaryElement = document.getElementById("result");
+    // summaryElement.innerHTML =
+    //   '<div class="load-div"> <div class="loader"></div> <div>Summarizing article...</div> </div>';
 
     // Get the active tab
     const [tab] = await chrome.tabs.query({
@@ -232,8 +233,8 @@ function displayQuizletFlashcards(flashcardsArray) {
 }
 async function summarizeContent() {
   const resultElement = document.getElementById("result");
-
-  resultElement.innerHTML =
+  const summaryElement = document.getElementById("result");
+  summaryElement.innerHTML =
     '<div class="load-div"> <div class="loader"></div> <div>Summarizing article...</div> </div>';
 
   try {
