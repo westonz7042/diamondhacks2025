@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupAnkiConnect();
   let keyHidden = false; // Changed to false to show API key by default
   let summarize = true;
-  
+
   // Get reference to the hide key button early
   const hideKey = document.getElementById("hide-key");
 
@@ -144,13 +144,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (result.apiKey) {
       document.getElementById("api-key").value = result.apiKey;
     }
-    
+
     // If user has previously used the extension and chosen to hide the API key
     if (result.keyHidden !== undefined) {
       keyHidden = result.keyHidden;
       hideKey.textContent = keyHidden ? "Show API-key" : "Hide API-key";
       document.getElementById("key-container").style.display = keyHidden
-        ? "none" 
+        ? "none"
         : "block";
     }
   });
@@ -191,7 +191,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       ? "text"
       : "password";
   });
-  
+
   // Set up hide key button click handler
   hideKey.addEventListener("click", () => {
     keyHidden = !keyHidden;
@@ -199,7 +199,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("key-container").style.display = keyHidden
       ? "none"
       : "block";
-    
+
     // Save the key visibility preference to storage
     chrome.storage.sync.set({ keyHidden: keyHidden });
   });
@@ -356,11 +356,11 @@ async function extractContent() {
 
                 // Add buttons to container
                 buttonContainer.appendChild(downloadLink);
-                buttonContainer.appendChild(ankiButton);  
+                buttonContainer.appendChild(ankiButton);
 
                 resultElement.innerHTML = `
             <h2 style="text-align: center;">${
-              response.title || "Extracted Content"
+              escapeHTML(response.title) || "Extracted Content"
             }</h2>`;
                 resultElement.appendChild(buttonContainer);
                 displayQuizletFlashcards(jsonArray);
@@ -422,11 +422,11 @@ function displayQuizletFlashcards(flashcardsData) {
 
   const front = document.createElement("div");
   front.className = "flashcard-face front";
-  front.textContent = flashcardsArray[currentIndex].front;
+  front.textContent = escapeHTML(flashcardsArray[currentIndex].front);
 
   const back = document.createElement("div");
   back.className = "flashcard-face back";
-  back.textContent = flashcardsArray[currentIndex].back;
+  back.textContent = escapeHTML(flashcardsArray[currentIndex].back);
 
   card.appendChild(front);
   card.appendChild(back);
@@ -485,9 +485,8 @@ function displayQuizletFlashcards(flashcardsData) {
 }
 async function summarizeContent() {
   const resultElement = document.getElementById("result");
-  const summaryElement = document.getElementById("result");
   const pref = document.getElementById("pref").value.trim();
-  summaryElement.innerHTML =
+  resultElement.innerHTML =
     '<div class="load-div"> <div class="loader"></div> <div>Summarizing article...</div> </div>';
   resultElement.style.display = "flex";
 
@@ -540,11 +539,9 @@ async function summarizeContent() {
                   }</p>`;
                   return;
                 }
-                console.log("Got PDF for summary: ", response);
                 summarizeArticle(response.content, pref).then((r) => {
                   if (r.success) {
-                    // resultElement.innerHTML = `<h4>Summary</h4><p>${response.content}</p>`;
-                    summaryElement.innerHTML = `<p>${r.content}</p>`;
+                    resultElement.innerHTML = `<p>${escapeHTML(r.content)}</p>`;
                   } else {
                     resultElement.innerHTML = `<p>Failed to summarize: ${r.error}</p>`;
                   }
@@ -564,7 +561,7 @@ async function summarizeContent() {
 
                 if (response.success) {
                   // resultElement.innerHTML = `<h4>Summary</h4><p>${response.content}</p>`;
-                  summaryElement.innerHTML = `<p>${response.content}</p>`;
+                  resultElement.innerHTML = `<p>${escapeHTML(response.content)}</p>`;
                 } else {
                   resultElement.innerHTML = `<p>Failed to summarize: ${response.error}</p>`;
                 }
@@ -578,4 +575,10 @@ async function summarizeContent() {
       resultElement.innerHTML = `<p>Error: ${err.message}</p>`;
     }
   });
+}
+function escapeHTML(html) {
+  return html
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
