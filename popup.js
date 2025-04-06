@@ -115,7 +115,7 @@ async function extractContent() {
 
         // Generate flashcards from the cleaned content
 
-        generateFlashcards(response.content, pref, numCards)
+        generateFlashcards(response.content, pref)
           .then((flashcardsArray) => {
             // resultElement.innerHTML = `</h4><h4>${flashcardsArray}</h4>`;
             // Convert to CSV string for download
