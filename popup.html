@@ -7,12 +7,14 @@
         width: 350px;
         padding: 15px;
         font-family: Arial, sans-serif;
+        background: #242038;
+        color: #fff;
       }
       button {
         width: 100%;
         padding: 10px;
         margin-top: 10px;
-        background-color: #4285f4;
+        background-color: #725ac1;
         color: white;
         border: none;
         border-radius: 4px;
@@ -20,7 +22,7 @@
         font-weight: bold;
       }
       button:hover {
-        background-color: #3367d6;
+        background-color: #8d86c9;
       }
       #result {
         margin-top: 15px;
@@ -29,50 +31,69 @@
         border: 1px solid #ddd;
         padding: 10px;
         border-radius: 4px;
-        background-color: #f9f9f9;
+        background-color: #cac4ce;
+        color: #242038;
+      }
+      input[type="text"],
+      input[type="password"] {
+        width: 95%;
+        padding: 8px;
+        margin-top: 5px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      input[type="text"]:focus,
+      input[type="password"]:focus {
+        background-color: #fbf3ef;
       }
       h3 {
         margin-top: 0;
-        color: #333;
+        color: #fff;
       }
-      #clipboard-status {
-        margin-top: 10px;
-        color: green;
-        font-size: 0.9em;
+      .loader {
+        border: 2px solid #242038;
+        border-top: 2px solid #cac4ce; /* Blue */
+        border-radius: 50%;
+        width: 0.8em;
+        height: 0.8em;
+        animation: spin 2s linear infinite;
+        margin-right: 6px;
+        overflow: hidden;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .load-div {
+        display: flex;
+        flex-direction: row;
       }
     </style>
   </head>
   <body>
     <h3>Anki Card Creator</h3>
-    <div style="margin-bottom: 15px">
+    <div style="margin-bottom: 5px">
       <label for="api-key">API Key:</label>
-      <input
-        type="text"
-        id="api-key"
-        placeholder="Enter your API key"
-        style="
-          width: 100%;
-          padding: 8px;
-          margin-top: 5px;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-        "
-      />
+      <input type="password" id="api-key" placeholder="Enter your API key" />
     </div>
-
+    <div style="display: flex; flex-direction: row; margin-bottom: 10px">
+      <input type="checkbox" id="show-key" />
+      <label style="margin-left: 3px; margin-top: 2px" for="show-key"
+        >Show key</label
+      >
+    </div>
     <div style="margin-bottom: 15px">
       <label for="pref">Flashcard Preference:</label>
       <input
         type="text"
         id="pref"
         placeholder="(e.g., 'I want my flashcards to be short and concise')"
-        style="
-          width: 100%;
-          padding: 8px;
-          margin-top: 5px;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-        "
       />
     </div>
 
