@@ -13,7 +13,7 @@
     "declarativeNetRequestFeedback",
     "webRequest"
   ],
-  "host_permissions": ["<all_urls>"],
+  "host_permissions": ["<all_urls>", "http://localhost:8765/"],
   "action": {
     "default_popup": "popup.html"
   },
@@ -23,7 +23,7 @@
   },
   "content_scripts": [
     {
-      "js": ["libs/pdf.min.js", "content.js"],
+      "js": ["libs/pdf.min.js", "readability.js", "content.js"],
       "matches": ["<all_urls>"]
     }
   ],

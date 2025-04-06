@@ -3,11 +3,134 @@
 import { generateFlashcards } from "./flashcard.js";
 import { summarizeArticle } from "./summary.js";
 import * as highlights from "./highlights.js";
+import {
+  isAnkiConnectAvailable,
+  getDecks,
+  addFlashcards,
+  syncAnki,
+} from "./ankiConnect.js";
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  // Check if AnkiConnect is available and set up the Anki UI
+  setupAnkiConnect();
   let keyHidden = true;
   let summarize = true;
 
+  // Function to send flashcards to Anki
+  window.sendToAnki = async function (flashcardsArray, title) {
+    const ankiDeckSelect = document.getElementById("anki-deck");
+    const selectedDeck = ankiDeckSelect.value;
+
+    // Check if a deck is selected
+    if (!selectedDeck) {
+      alert("Please select an Anki deck first");
+      return;
+    }
+
+    // Check if AnkiConnect is available
+    try {
+      const isAvailable = await isAnkiConnectAvailable();
+      if (!isAvailable) {
+        alert(
+          "Anki is not running or AnkiConnect is not installed. Please make sure Anki is running and the AnkiConnect add-on is installed."
+        );
+        return;
+      }
+
+      // Change the button text to indicate loading
+      const buttons = document.querySelectorAll(".anki-button");
+      buttons.forEach((button) => {
+        button.textContent = "Sending to Anki...";
+        button.disabled = true;
+        button.style.backgroundColor = "#6c757d";
+      });
+
+      // Send the flashcards to Anki
+      const addedNotes = await addFlashcards(flashcardsArray, selectedDeck);
+
+      // Sync Anki to save changes
+      await syncAnki();
+
+      // Show success message
+      const successCount = addedNotes.filter((id) => id !== null).length;
+      const totalCount = flashcardsArray.length;
+
+      alert(
+        `Successfully added ${successCount} out of ${totalCount} flashcards to Anki deck "${selectedDeck}".`
+      );
+    } catch (error) {
+      console.error("Error sending flashcards to Anki:", error);
+      alert(`Error sending flashcards to Anki: ${error.message}`);
+    } finally {
+      // Restore button state regardless of success or failure
+      const buttons = document.querySelectorAll(".anki-button");
+      buttons.forEach((button) => {
+        button.textContent = "Send to Anki";
+        button.disabled = false;
+        button.style.backgroundColor = "#28a745";
+      });
+    }
+  };
+
+  async function setupAnkiConnect() {
+    const ankiStatus = document.getElementById("anki-status");
+    const ankiDeckSelect = document.getElementById("anki-deck");
+
+    try {
+      // Check if AnkiConnect is available
+      const isAvailable = await isAnkiConnectAvailable();
+
+      if (isAvailable) {
+        ankiStatus.textContent = "Connected to Anki";
+        ankiStatus.style.color = "#28a745";
+
+        // Populate deck list
+        const decks = await getDecks();
+        ankiDeckSelect.innerHTML = ""; // Clear loading option
+
+        // Add a default option
+        const defaultOption = document.createElement("option");
+        defaultOption.value = "";
+        defaultOption.textContent = "-- Select a deck --";
+        ankiDeckSelect.appendChild(defaultOption);
+
+        // Add each deck as an option
+        decks.forEach((deck) => {
+          const option = document.createElement("option");
+          option.value = deck;
+          option.textContent = deck;
+          ankiDeckSelect.appendChild(option);
+        });
+
+        // Store selected deck in storage
+        ankiDeckSelect.addEventListener("change", () => {
+          chrome.storage.sync.set({ selectedDeck: ankiDeckSelect.value });
+        });
+
+        // Load saved deck selection
+        chrome.storage.sync.get(["selectedDeck"], (result) => {
+          if (result.selectedDeck) {
+            ankiDeckSelect.value = result.selectedDeck;
+          }
+        });
+      } else {
+        // AnkiConnect not available
+        ankiStatus.textContent =
+          "Anki not running or AnkiConnect not installed";
+        ankiStatus.style.color = "#dc3545";
+        ankiDeckSelect.innerHTML =
+          '<option value="">Anki not available</option>';
+        ankiDeckSelect.disabled = true;
+      }
+    } catch (error) {
+      console.error("Error setting up AnkiConnect:", error);
+      ankiStatus.textContent = `Error: ${error.message}`;
+      ankiStatus.style.color = "#dc3545";
+      ankiDeckSelect.innerHTML =
+        '<option value="">Error connecting to Anki</option>';
+      ankiDeckSelect.disabled = true;
+    }
+  }
   // Load saved API key if exists
   chrome.storage.sync.get(["apiKey"], function (result) {
     if (result.apiKey) {
@@ -199,11 +322,26 @@ async function extractContent() {
                 downloadLink.style.marginTop = "10px";
                 downloadLink.className = "download-button";
 
+                // Create button container
+                const buttonContainer = document.createElement("div");
+                buttonContainer.className = "button-container";
+
+                // Create "Send to Anki" button
+                const ankiButton = document.createElement("button");
+                ankiButton.textContent = "Send to Anki";
+                ankiButton.className = "anki-button";
+                ankiButton.onclick = () =>
+                  sendToAnki(jsonArray, response.title || "Extracted Content");
+
+                // Add buttons to container
+                buttonContainer.appendChild(downloadLink);
+                buttonContainer.appendChild(ankiButton);
+
                 resultElement.innerHTML = `
             <h2 style="text-align: center;">${
               response.title || "Extracted Content"
             }</h2>`;
-                resultElement.appendChild(downloadLink);
+                resultElement.appendChild(buttonContainer);
                 displayQuizletFlashcards(jsonArray);
               })
 

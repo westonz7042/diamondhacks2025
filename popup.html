@@ -47,6 +47,31 @@
       </div>
     </div>
     <button id="generate">Generate Summary</button>
+    <!-- AnkiConnect Settings -->
+    <div style="margin-bottom: 15px" id="anki-connect-settings">
+      <div
+        style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 5px;
+        "
+      >
+        <label for="anki-deck">Anki Deck:</label>
+        <select
+          id="anki-deck"
+          style="width: 60%; padding: 5px; border-radius: 4px"
+        >
+          <option value="">Loading decks...</option>
+        </select>
+      </div>
+      <div
+        id="anki-status"
+        style="font-size: 12px; margin-top: 5px; color: #cac4ce"
+      ></div>
+    </div>
+
+    <button id="summarize">Summarize</button>
     <!-- Saved Highlights Section -->
     <div
       id="saved-highlights-section"
@@ -89,6 +114,5 @@
     </div>
 
     <div id="result"></div>
-    
   </body>
 </html>
