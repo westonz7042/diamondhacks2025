@@ -443,7 +443,7 @@ async function extractContent() {
     ).innerHTML = `<p>Error: ${error.message}</p>`;
   }
 }
-function displayQuizletFlashcards(flashcardsData) {
+export function displayQuizletFlashcards(flashcardsData) {
   let currentIndex = 0;
 
   // Ensure we have a valid array of flashcard objects

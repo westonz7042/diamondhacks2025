@@ -1,4 +1,5 @@
 import { generateFlashcards } from "./flashcard.js";
+import { displayQuizletFlashcards } from "./popup.js";
 
 // Function to load and display saved highlights
 export function loadSavedHighlights() {
