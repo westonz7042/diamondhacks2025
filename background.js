@@ -401,7 +401,34 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         console.error("Error injecting content script:", error);
         sendResponse({ success: false, error: error.message });
       });
-
+    
+    return true; // Keep the message channel open for async response
+  } 
+  else if (request.action === "saveHighlight") {
+    console.log("Saving highlight:", request.content.substring(0, 50) + "...");
+    
+    // Save the highlight
+    const highlight = {
+      content: request.content,
+      title: request.title,
+      url: sender.tab ? sender.tab.url : null,
+      tabId: sender.tab ? sender.tab.id : null
+    };
+    
+    // Use promise-based approach instead of await
+    saveHighlight(highlight).then(result => {
+      sendResponse({ 
+        success: true, 
+        message: "Highlight saved successfully",
+        count: result.totalCount // Use the site-specific count
+      });
+    }).catch(error => {
+      console.error("Error saving highlight:", error);
+      sendResponse({ 
+        success: false, 
+        error: error.message || "Failed to save highlight" 
+      });
+    });
     return true; // Keep the message channel open for async response
   }
 });
