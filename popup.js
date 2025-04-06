@@ -68,11 +68,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       );
     } catch (error) {
       console.error("Error sending flashcards to Anki:", error);
-      
+
       // Check for duplicate error messages
       if (error.message && error.message.includes("duplicate")) {
         // Create a more user-friendly message for duplicate cards
-        const errorMessage = "Some flashcards couldn't be added because they already exist in your Anki deck.";
+        const errorMessage =
+          "Some flashcards couldn't be added because they already exist in your Anki deck.";
         alert(errorMessage);
       } else {
         // Show the original error for other types of errors
@@ -342,8 +343,9 @@ async function extractContent() {
                 // Create download link for CSV
                 const blob = new Blob([csvContent], { type: "text/csv" });
                 // Define sanitizedTitle before using it
-                const sanitizedTitle = response.title?.replace(/[^\w\s]/gi, "") || "flashcards";
-                
+                const sanitizedTitle =
+                  response.title?.replace(/[^\w\s]/gi, "") || "flashcards";
+
                 try {
                   if ("showSaveFilePicker" in window) {
                     const handle = await window.showSaveFilePicker({
@@ -424,7 +426,7 @@ async function extractContent() {
                 buttonContainer.appendChild(ankiButton);
 
                 resultElement.innerHTML = `
-            <h2 style="text-align: center; margin: 0px; ">${
+            <h2 style="text-align: center; margin: 0px; gap: 0px;">${
               escapeHTML(response.title) || "Extracted Content"
             }</h2>`;
                 resultElement.appendChild(buttonContainer);
@@ -606,7 +608,11 @@ async function summarizeContent() {
                 }
                 summarizeArticle(response.content, pref).then((r) => {
                   if (r.success) {
-                    resultElement.innerHTML = `<p>${escapeHTML(r.content)}</p>`;
+                    const formattedContent = formatSummary(r.content);
+                    resultElement.innerHTML = `
+                      <h4 style="text-align: center; margin-bottom: 15px;">Summary</h4>
+                      ${formattedContent}
+                    `;
                   } else {
                     resultElement.innerHTML = `<p>Failed to summarize: ${r.error}</p>`;
                   }
@@ -626,9 +632,11 @@ async function summarizeContent() {
 
                 if (response.success) {
                   // resultElement.innerHTML = `<h4>Summary</h4><p>${response.content}</p>`;
-                  resultElement.innerHTML = `<p>${escapeHTML(
-                    response.content
-                  )}</p>`;
+                  const formattedContent = formatSummary(response.content);
+                  resultElement.innerHTML = `
+                    <h4 style="text-align: center; margin-bottom: 15px;">Summary</h4>
+                    ${formattedContent}
+                  `;
                 } else {
                   resultElement.innerHTML = `<p>Failed to summarize: ${response.error}</p>`;
                 }
@@ -649,3 +657,31 @@ function escapeHTML(html) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 }
+
+function formatSummary(content) {
+  // Split the content into paragraphs or bullet points
+  const paragraphs = content.split("\n").filter((p) => p.trim() !== "");
+
+  // Wrap each paragraph in a <p> tag or format bullet points
+  return paragraphs
+    .map((paragraph) => {
+      // Handle bullet points (lines starting with "*" or "-")
+      if (/^\s*[\*\-]\s+/.test(paragraph)) {
+        const cleanedText = paragraph.replace(/^\s*[\*\-]\s+/, ""); // Remove the leading "*" or "-"
+        return `<ul style="margin-left: 0px; padding-left: 0px;"><li>${convertToBold(
+          escapeHTML(cleanedText)
+        )}</li></ul>`;
+      } else {
+        // Format as a regular paragraph
+        return `<p>${convertToBold(escapeHTML(paragraph))}</p>`;
+      }
+    })
+    .join("");
+}
+
+// Helper function to convert **text** to <strong>text</strong>
+function convertToBold(text) {
+  return text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+}
+
+// Helper function to escape HTML for safe rendering

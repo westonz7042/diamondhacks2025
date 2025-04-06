@@ -21,7 +21,7 @@ export async function summarizeArticle(text, userPreference) {
               {
                 parts: [
                   {
-                    text: `Summarize this with main ideas at the level of a university student. Do not provide HTML syntax, or provide safe HTML injection-proof responses:${
+                    text: `Summarize this with main ideas:${
                       userPreference ? userPreference : ""
                     }\n\n${text}`,
                   },
