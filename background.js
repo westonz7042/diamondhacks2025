@@ -397,11 +397,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     };
     
     // Use promise-based approach instead of await
-    saveHighlight(highlight).then(highlights => {
+    saveHighlight(highlight).then(result => {
       sendResponse({ 
         success: true, 
         message: "Highlight saved successfully",
-        count: highlights.length
+        count: result.totalCount // Use the site-specific count
       });
     }).catch(error => {
       console.error("Error saving highlight:", error);

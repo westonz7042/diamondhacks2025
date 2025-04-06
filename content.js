@@ -188,7 +188,7 @@ function updateFloatingButtonPosition() {
 function hideFloatingButton() {
   if (floatingButton) {
     floatingButton.style.display = 'none';
-    floatingButton.textContent = '📝 Create Cards';
+    floatingButton.textContent = '📝 Save Highlight';
   }
 }
 
