@@ -74,9 +74,11 @@ export function displayCurrentSiteHighlights(highlights, currentHostname) {
     const siteHeader = document.createElement("div");
     siteHeader.className = "site-header";
     // Extract just the domain part for display to keep UI clean
-    const displayHostname = currentHostname.split('/')[0];
+    const displayHostname = currentHostname.split("/")[0];
     const path = currentHostname.substring(displayHostname.length);
-    siteHeader.textContent = `Highlights from ${displayHostname}${path ? path : ''}`;
+    siteHeader.textContent = `Highlights from ${displayHostname}${
+      path ? path : ""
+    }`;
     siteHeader.style.fontWeight = "bold";
     siteHeader.style.marginBottom = "10px";
     siteHeader.style.color = "white";
@@ -170,10 +172,10 @@ export function clearAllHighlights() {
   }
 
   // Extract the domain part for display
-  const displayDomain = currentWebsite.split('/')[0];
+  const displayDomain = currentWebsite.split("/")[0];
   const path = currentWebsite.substring(displayDomain.length);
   const displayLocation = path ? `${displayDomain}${path}` : displayDomain;
-  
+
   if (
     confirm(
       `Are you sure you want to clear all highlights from ${displayLocation}?`
@@ -181,8 +183,8 @@ export function clearAllHighlights() {
   ) {
     // Need to construct a complete URL for clearing highlights
     // The currentWebsite now contains domain + path
-    let urlPrefix = 'https://';
-    
+    let urlPrefix = "https://";
+
     // We have a domain + path format
     chrome.runtime.sendMessage(
       {
@@ -243,8 +245,8 @@ export async function generateFromHighlights() {
 
     // Get saved highlights for the current website only
     // Construct proper URL with the domain + path
-    let urlPrefix = 'https://';
-    
+    let urlPrefix = "https://";
+
     chrome.runtime.sendMessage(
       {
         action: "getHighlights",
@@ -277,10 +279,12 @@ export async function generateFromHighlights() {
         }
 
         // Extract domain and path parts for display
-        const displayDomain = currentWebsite.split('/')[0];
+        const displayDomain = currentWebsite.split("/")[0];
         const path = currentWebsite.substring(displayDomain.length);
-        const displayLocation = path ? `${displayDomain}${path}` : displayDomain;
-        
+        const displayLocation = path
+          ? `${displayDomain}${path}`
+          : displayDomain;
+
         // Add website info to title
         const websiteInfo = ` from ${displayLocation}`;
 
@@ -364,29 +368,30 @@ export async function generateFromHighlights() {
 
               // Create a title for the download that includes the website info
               // Create a sanitized filename from the path
-              const sanitizedPath = path ? path.replace(/[^a-z0-9]/gi, '_') : '';
+              const sanitizedPath = path
+                ? path.replace(/[^a-z0-9]/gi, "_")
+                : "";
               const title = `${displayDomain}${sanitizedPath}_flashcards`;
 
               downloadLink.download = `${title}.csv`;
               downloadLink.href = url;
-              downloadLink.textContent = "Download Flashcards as CSV";
-              downloadLink.style.display = "block";
-              downloadLink.style.marginTop = "10px";
+              downloadLink.textContent = "Download as CSV";
               downloadLink.className = "download-button";
 
               // Display the extracted content with website info
               const displayTitle = `Flashcards from ${displayLocation}`;
-              
+
               // Create button container
               const buttonContainer = document.createElement("div");
               buttonContainer.className = "button-container";
-              
+
               // Create "Send to Anki" button
               const ankiButton = document.createElement("button");
               ankiButton.textContent = "Send to Anki";
               ankiButton.className = "anki-button";
-              ankiButton.onclick = () => window.sendToAnki(jsonArray, displayTitle);
-              
+              ankiButton.onclick = () =>
+                window.sendToAnki(jsonArray, displayTitle);
+
               // Add buttons to container
               buttonContainer.appendChild(downloadLink);
               buttonContainer.appendChild(ankiButton);
