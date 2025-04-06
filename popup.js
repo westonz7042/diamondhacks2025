@@ -137,6 +137,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         ankiStatus.style.color = "#dc3545";
         ankiDeckSelect.innerHTML =
           '<option value="">Anki not available</option>';
+
         ankiDeckSelect.disabled = true;
       }
     } catch (error) {

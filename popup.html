@@ -2,6 +2,11 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins&display=swap"
+      rel="stylesheet"
+    />
+
     <link rel="stylesheet" href="./popup.css" />
 
     <script type="module" src="popup.js"></script>
@@ -17,11 +22,16 @@
     <div id="key-container" style="display: block">
       <div style="margin-bottom: 5px">
         <label for="api-key">Gemini API Key:</label>
-        <input type="password" id="api-key" placeholder="Enter your API key" />
+        <input
+          type="password"
+          id="api-key"
+          placeholder="Enter your API key"
+          style="font-size: 12px; font-family: 'Poppins', sans-serif"
+        />
       </div>
       <div style="display: flex; flex-direction: row; margin-bottom: 10px">
         <input type="checkbox" id="show-key" />
-        <label style="margin-left: 3px; margin-top: 2px" for="show-key"
+        <label style="margin-left: 3px; margin-top: 1px" for="show-key"
           >Show key</label
         >
       </div>
@@ -32,6 +42,7 @@
         type="text"
         id="pref"
         placeholder="(e.g., 'I want my flashcards to be short and concise')"
+        style="font-size: 12px; font-family: 'Poppins', sans-serif"
       />
     </div>
     <!-- AnkiConnect Settings -->
@@ -47,7 +58,13 @@
         <label for="anki-deck">Anki Deck:</label>
         <select
           id="anki-deck"
-          style="width: 60%; padding: 5px; border-radius: 4px"
+          style="
+            width: 60%;
+            padding: 5px;
+            border-radius: 4px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 12px;
+          "
         >
           <option value="">Loading decks...</option>
         </select>
@@ -59,7 +76,12 @@
     </div>
     Options:
     <div
-      style="display: flex; flex-direction: row; justify-content: space-between; padding-top: 6px"
+      style="
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        padding-top: 6px;
+      "
     >
       <div class="tab-container">
         <input class="tab" type="radio" name="mode" id="summarize" checked />
