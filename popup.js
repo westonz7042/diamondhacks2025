@@ -340,6 +340,9 @@ async function extractContent() {
 
                 // Create download link for CSV
                 const blob = new Blob([csvContent], { type: "text/csv" });
+                // Define sanitizedTitle before using it
+                const sanitizedTitle = response.title?.replace(/[^\w\s]/gi, "") || "flashcards";
+                
                 try {
                   if ("showSaveFilePicker" in window) {
                     const handle = await window.showSaveFilePicker({
@@ -388,8 +391,7 @@ async function extractContent() {
                 saveCsvButton.className = "save-button"; // Style it however you like
                 saveCsvButton.onclick = async () => {
                   try {
-                    const sanitizedTitle =
-                      response.title?.replace(/[^\w\s]/gi, "") || "flashcards";
+                    // Reuse the same sanitizedTitle variable defined above
                     const blob = new Blob([csvContent], { type: "text/csv" });
 
                     if ("showSaveFilePicker" in window) {
