@@ -1,4 +1,46 @@
 // popup.js
+const style = document.createElement("style");
+style.textContent = `
+  .flashcard-container {
+    perspective: 1000px;
+  }
+  .flashcard {
+    width: 100%;
+    max-width: 300px;
+    height: 150px;
+    margin: 0 auto 10px;
+    position: relative;
+    transition: transform 0.6s;
+    transform-style: preserve-3d;
+    cursor: pointer;
+  }
+  .flashcard.flipped {
+    transform: rotateX(180deg);
+  }
+  .flashcard-face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    background: #f9f9f9;
+    border: 1px solid #888;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+  }
+  .flashcard-face.back {
+    transform: rotateX(180deg);
+    background: #e9f9ff;
+  }
+  .flashcard-controls {
+    display: flex;
+    justify-content: space-between;
+  }
+`;
+document.head.appendChild(style);
 
 import { generateFlashcards } from "./flashcard.js";
 
@@ -46,7 +88,6 @@ async function extractContent() {
     const pref = document.getElementById("pref").value.trim();
     const numCards = document.getElementById("num-cards").value.trim();
 
-
     // Send message to the background script to handle content extraction
     chrome.runtime.sendMessage(
       {
@@ -68,10 +109,9 @@ async function extractContent() {
           }</p>`;
           return;
         }
-        
+
         // Generate flashcards from the cleaned content
         generateFlashcards(response.content, pref, numCards)
-        
           .then((flashcards) => {
             const blob = new Blob([flashcards], { type: "text/csv" });
             const url = URL.createObjectURL(blob);
@@ -89,6 +129,7 @@ async function extractContent() {
                 <h4>${response.title || "Extracted Content"}</h4>
                 <div>${flashcards}</div>`;
             resultElement.appendChild(downloadLink);
+            displayQuizletFlashcards(flashcards);
           })
           .catch((error) => {
             console.log(error);
@@ -106,5 +147,73 @@ async function extractContent() {
     document.getElementById(
       "result"
     ).innerHTML = `<p>Error: ${error.message}</p>`;
+  }
+}
+function displayQuizletFlashcards(csvText) {
+  const lines = csvText.trim().split("\n");
+  const flashcards = lines.map((line) => {
+    const [question, answer] = line.split(/,(.+)/);
+    return {
+      question: question.replace(/^\"|\"$/g, ""),
+      answer: answer.replace(/^\"|\"$/g, ""),
+    };
+  });
+
+  let currentIndex = 0;
+
+  const container = document.createElement("div");
+  container.id = "quizlet-container";
+  container.className = "flashcard-container";
+
+  const card = document.createElement("div");
+  card.className = "flashcard";
+
+  const front = document.createElement("div");
+  front.className = "flashcard-face front";
+  front.textContent = flashcards[currentIndex].question;
+
+  const back = document.createElement("div");
+  back.className = "flashcard-face back";
+  back.textContent = flashcards[currentIndex].answer;
+
+  card.appendChild(front);
+  card.appendChild(back);
+
+  card.addEventListener("click", () => {
+    card.classList.toggle("flipped");
+  });
+
+  const controls = document.createElement("div");
+  controls.className = "flashcard-controls";
+
+  const prev = document.createElement("button");
+  prev.textContent = "Previous";
+  prev.onclick = () => {
+    if (currentIndex > 0) {
+      currentIndex--;
+      updateCard();
+    }
+  };
+
+  const next = document.createElement("button");
+  next.textContent = "Next";
+  next.onclick = () => {
+    if (currentIndex < flashcards.length - 1) {
+      currentIndex++;
+      updateCard();
+    }
+  };
+
+  controls.appendChild(prev);
+  controls.appendChild(next);
+
+  container.appendChild(card);
+  container.appendChild(controls);
+  document.getElementById("result").appendChild(container);
+
+  function updateCard() {
+    front.textContent = flashcards[currentIndex].question;
+    back.textContent = flashcards[currentIndex].answer;
+    card.classList.remove("flipped"); // reset to front view
   }
 }
