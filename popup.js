@@ -2,17 +2,20 @@
 const style = document.createElement("style");
 style.textContent = `
   .flashcard-container {
+  margin-top:20px;
+  width:90%;
     perspective: 1000px;
   }
   .flashcard {
     width: 100%;
-    max-width: 300px;
-    height: 150px;
+    max-width: 1000px;
+    height: 140px;
     margin: 0 auto 10px;
     position: relative;
     transition: transform 0.6s;
     transform-style: preserve-3d;
     cursor: pointer;
+    text-align: center;
   }
   .flashcard.flipped {
     transform: rotateX(180deg);
@@ -38,7 +41,30 @@ style.textContent = `
   .flashcard-controls {
     display: flex;
     justify-content: space-between;
+    margin:10px;
+    
   }
+  .button{
+  width:100px;
+  }
+  .download-button {
+  display: inline-block;
+  padding: 10px 16px;
+  background-color: #7d63f3;
+  color: white;
+  text-align: center;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 0.95rem;
+  margin-top: 16px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  transition: background-color 0.2s ease;
+}
+
+.download-button:hover {
+  background-color: #6c54e6;
+}
 `;
 document.head.appendChild(style);
 
@@ -170,6 +196,8 @@ function displayCurrentSiteHighlights(highlights, currentHostname) {
     siteHeader.textContent = `Highlights from ${currentHostname}`;
     siteHeader.style.fontWeight = "bold";
     siteHeader.style.marginBottom = "10px";
+    siteHeader.style.color = "white";
+    siteHeader.style.textAlign = "center";
 
     highlightsList.appendChild(siteHeader);
 
@@ -290,8 +318,8 @@ async function generateFromHighlights() {
     // Show loading state
     const resultElement = document.getElementById("result");
     resultElement.style.display = "flex";
-    resultElement.innerHTML = "<p>Generating flashcards from highlights...</p>";
-
+    resultElement.innerHTML =
+      '<div class="load-div"> <div class="loader"></div> <div>Generating flashcards from highlights...</div> </div>';
     // Get the active tab
     const [tab] = await chrome.tabs.query({
       active: true,
@@ -441,12 +469,13 @@ async function generateFromHighlights() {
               downloadLink.textContent = "Download Flashcards as CSV";
               downloadLink.style.display = "block";
               downloadLink.style.marginTop = "10px";
+              downloadLink.className = "download-button";
 
               // Display the extracted content with website info
               const displayTitle = `Flashcards from ${currentWebsite}`;
 
               resultElement.innerHTML = `
-            <h4>${displayTitle}</h4>
+            <h2 style="text-align: center;" >${displayTitle}</h2>
           `;
               resultElement.appendChild(downloadLink);
               displayQuizletFlashcards(jsonArray);
@@ -478,8 +507,6 @@ async function extractContent() {
       '<div class="load-div"> <div class="loader"></div> <div>Extracting and cleaning content...</div> </div>';
     // const resultElement = document.getElementById("result");
     const summaryElement = document.getElementById("result");
-    // summaryElement.innerHTML =
-    //   '<div class="load-div"> <div class="loader"></div> <div>Summarizing article...</div> </div>';
 
     resultElement.style.display = "flex";
     // Get the active tab
@@ -586,9 +613,12 @@ async function extractContent() {
                 downloadLink.textContent = "Download Flashcards as CSV";
                 downloadLink.style.display = "block";
                 downloadLink.style.marginTop = "10px";
+                downloadLink.className = "download-button";
 
                 resultElement.innerHTML = `
-            <h4>${response.title || "Extracted Content"}</h4>`;
+            <h2 style="text-align: center;">${
+              response.title || "Extracted Content"
+            }</h2>`;
                 resultElement.appendChild(downloadLink);
                 displayQuizletFlashcards(jsonArray);
               })
@@ -643,6 +673,10 @@ function displayQuizletFlashcards(flashcardsData) {
   const card = document.createElement("div");
   card.className = "flashcard";
 
+  const flashcardBox = document.createElement("div");
+  flashcardBox.className = "flashcard-box";
+  flashcardBox.appendChild(card);
+
   const front = document.createElement("div");
   front.className = "flashcard-face front";
   front.textContent = flashcardsArray[currentIndex].front;
@@ -662,6 +696,7 @@ function displayQuizletFlashcards(flashcardsData) {
   controls.className = "flashcard-controls";
 
   const prev = document.createElement("button");
+  prev.className = "button";
   prev.textContent = "Previous";
   prev.onclick = () => {
     if (currentIndex > 0) {
@@ -672,6 +707,7 @@ function displayQuizletFlashcards(flashcardsData) {
 
   const next = document.createElement("button");
   next.textContent = "Next";
+  next.className = "button";
   next.onclick = () => {
     if (currentIndex < flashcardsArray.length - 1) {
       currentIndex++;
@@ -682,7 +718,7 @@ function displayQuizletFlashcards(flashcardsData) {
   controls.appendChild(prev);
   controls.appendChild(next);
 
-  container.appendChild(card);
+  container.appendChild(flashcardBox);
   container.appendChild(controls);
   document.getElementById("result").appendChild(container);
 

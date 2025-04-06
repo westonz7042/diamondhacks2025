@@ -2,6 +2,8 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <link rel="stylesheet" href="./popup.css" />
+
     <style>
       body {
         width: 350px;
@@ -25,16 +27,18 @@
         background-color: #8d86c9;
       }
       #result {
-        margin-top: 15px;
+        margin-top: 20px;
         max-height: 350px;
         overflow-y: auto;
         border: 1px solid #ddd;
-        padding: 10px;
+        padding: 24px;
         border-radius: 4px;
         background-color: #cac4ce;
         color: #242038;
         display: none;
         flex-direction: column;
+        align-items: center;
+        max-width: 500px;
       }
       input[type="text"],
       input[type="password"] {
@@ -93,7 +97,7 @@
       >
     </div>
     <div style="margin-bottom: 15px">
-      <label for="pref">Flashcard Preference:</label>
+      <label for="pref">Prompt Preference:</label>
       <input
         type="text"
         id="pref"
@@ -137,7 +141,7 @@
       >
         <!-- Highlights will be populated here -->
       </div>
-      <button id="generate-from-highlights" style="background-color: #34a853">
+      <button id="generate-from-highlights" style="background-color: #725ac1">
         Generate Cards from Highlights
       </button>
     </div>
