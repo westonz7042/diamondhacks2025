@@ -68,7 +68,16 @@ document.addEventListener("DOMContentLoaded", async () => {
       );
     } catch (error) {
       console.error("Error sending flashcards to Anki:", error);
-      alert(`Error sending flashcards to Anki: ${error.message}`);
+      
+      // Check for duplicate error messages
+      if (error.message && error.message.includes("duplicate")) {
+        // Create a more user-friendly message for duplicate cards
+        const errorMessage = "Some flashcards couldn't be added because they already exist in your Anki deck.";
+        alert(errorMessage);
+      } else {
+        // Show the original error for other types of errors
+        alert(`Error sending flashcards to Anki: ${error.message}`);
+      }
     } finally {
       // Restore button state regardless of success or failure
       const buttons = document.querySelectorAll(".anki-button");
@@ -128,6 +137,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         ankiStatus.style.color = "#dc3545";
         ankiDeckSelect.innerHTML =
           '<option value="">Anki not available</option>';
+
         ankiDeckSelect.disabled = true;
       }
     } catch (error) {
@@ -292,7 +302,7 @@ async function extractContent() {
             // Generate flashcards from the cleaned content
 
             generateFlashcards(response.content, pref)
-              .then((flashcardsData) => {
+              .then(async (flashcardsData) => {
                 // Process the JSON response from generateFlashcards
                 let jsonArray;
 
@@ -331,17 +341,34 @@ async function extractContent() {
 
                 // Create download link for CSV
                 const blob = new Blob([csvContent], { type: "text/csv" });
-                const url = URL.createObjectURL(blob);
-                const downloadLink = document.createElement("a");
-                const sanitizedTitle = response.title
-                  ? response.title.replace(/[^\w\s]/gi, "")
-                  : "flashcards";
-                downloadLink.download = `${sanitizedTitle}_flashcards.csv`;
-                downloadLink.href = url;
-                downloadLink.textContent = "Download Flashcards as CSV";
-                downloadLink.style.display = "block";
-                downloadLink.style.marginTop = "10px";
-                downloadLink.className = "download-button";
+                try {
+                  if ("showSaveFilePicker" in window) {
+                    const handle = await window.showSaveFilePicker({
+                      suggestedName: `${sanitizedTitle}_flashcards.csv`,
+                      types: [
+                        {
+                          description: "CSV file",
+                          accept: { "text/csv": [".csv"] },
+                        },
+                      ],
+                    });
+
+                    const writable = await handle.createWritable();
+                    await writable.write(blob);
+                    await writable.close();
+
+                    console.log("✅ File saved successfully");
+                  } else {
+                    // Fallback: auto-download if picker is not supported
+                    const url = URL.createObjectURL(blob);
+                    const fallbackLink = document.createElement("a");
+                    fallbackLink.href = url;
+                    fallbackLink.download = `${sanitizedTitle}_flashcards.csv`;
+                    fallbackLink.click();
+                  }
+                } catch (err) {
+                  console.error("❌ Save canceled or failed:", err);
+                }
 
                 // Create button container
                 const buttonContainer = document.createElement("div");
@@ -355,11 +382,47 @@ async function extractContent() {
                   sendToAnki(jsonArray, response.title || "Extracted Content");
 
                 // Add buttons to container
-                buttonContainer.appendChild(downloadLink);
+
+                //Make CSV button
+                const saveCsvButton = document.createElement("button");
+                saveCsvButton.textContent = "Save Flashcards as CSV";
+                saveCsvButton.className = "save-button"; // Style it however you like
+                saveCsvButton.onclick = async () => {
+                  try {
+                    const sanitizedTitle =
+                      response.title?.replace(/[^\w\s]/gi, "") || "flashcards";
+                    const blob = new Blob([csvContent], { type: "text/csv" });
+
+                    if ("showSaveFilePicker" in window) {
+                      const handle = await window.showSaveFilePicker({
+                        suggestedName: `${sanitizedTitle}_flashcards.csv`,
+                        types: [
+                          {
+                            description: "CSV file",
+                            accept: { "text/csv": [".csv"] },
+                          },
+                        ],
+                      });
+
+                      const writable = await handle.createWritable();
+                      await writable.write(blob);
+                      await writable.close();
+                    } else {
+                      const url = URL.createObjectURL(blob);
+                      const fallbackLink = document.createElement("a");
+                      fallbackLink.href = url;
+                      fallbackLink.download = `${sanitizedTitle}_flashcards.csv`;
+                      fallbackLink.click();
+                    }
+                  } catch (err) {
+                    console.error("❌ Save canceled or failed:", err);
+                  }
+                };
+                buttonContainer.appendChild(saveCsvButton);
                 buttonContainer.appendChild(ankiButton);
 
                 resultElement.innerHTML = `
-            <h2 style="text-align: center;">${
+            <h2 style="text-align: center; margin: 0px; ">${
               escapeHTML(response.title) || "Extracted Content"
             }</h2>`;
                 resultElement.appendChild(buttonContainer);
@@ -381,7 +444,7 @@ async function extractContent() {
     ).innerHTML = `<p>Error: ${error.message}</p>`;
   }
 }
-function displayQuizletFlashcards(flashcardsData) {
+export function displayQuizletFlashcards(flashcardsData) {
   let currentIndex = 0;
 
   // Ensure we have a valid array of flashcard objects
@@ -487,7 +550,7 @@ async function summarizeContent() {
   const resultElement = document.getElementById("result");
   const pref = document.getElementById("pref").value.trim();
   resultElement.innerHTML =
-    '<div class="load-div"> <div class="loader"></div> <div>Summarizing article...</div> </div>';
+    '<div class="load-div"> <div class="loader"></div> <div>Summarizing content...</div> </div>';
   resultElement.style.display = "flex";
 
   chrome.storage.sync.get(["apiKey"], async function (result) {
@@ -561,7 +624,9 @@ async function summarizeContent() {
 
                 if (response.success) {
                   // resultElement.innerHTML = `<h4>Summary</h4><p>${response.content}</p>`;
-                  resultElement.innerHTML = `<p>${escapeHTML(response.content)}</p>`;
+                  resultElement.innerHTML = `<p>${escapeHTML(
+                    response.content
+                  )}</p>`;
                 } else {
                   resultElement.innerHTML = `<p>Failed to summarize: ${response.error}</p>`;
                 }
