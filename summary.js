@@ -6,17 +6,15 @@ function getEndpoint() {
   return `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
 }
 
-const articleText = `text`;
-
 // Function to clean up text content
 async function cleanupText(text) {
   // Get the latest API key from storage
   return new Promise((resolve, reject) => {
-    chrome.storage.sync.get(['apiKey'], async function(result) {
+    chrome.storage.sync.get(["apiKey"], async function (result) {
       if (result.apiKey) {
         API_KEY = result.apiKey;
       }
-      
+
       try {
         const response = await fetch(getEndpoint(), {
           method: "POST",
@@ -45,7 +43,10 @@ async function cleanupText(text) {
 
         if (!cleanedText) {
           console.error("No cleaned text found in the response.");
-          reject({ error: "No cleaned text found in response", success: false });
+          reject({
+            error: "No cleaned text found in response",
+            success: false,
+          });
           return;
         }
 
@@ -62,11 +63,11 @@ async function cleanupText(text) {
 async function summarizeArticle(text) {
   // Get the latest API key from storage
   return new Promise((resolve, reject) => {
-    chrome.storage.sync.get(['apiKey'], async function(result) {
+    chrome.storage.sync.get(["apiKey"], async function (result) {
       if (result.apiKey) {
         API_KEY = result.apiKey;
       }
-      
+
       try {
         const response = await fetch(getEndpoint(), {
           method: "POST",
@@ -110,9 +111,9 @@ async function summarizeArticle(text) {
 }
 
 // Export functions for use in extension
-if (typeof module !== 'undefined') {
+if (typeof module !== "undefined") {
   module.exports = {
     cleanupText,
-    summarizeArticle
+    summarizeArticle,
   };
 }
