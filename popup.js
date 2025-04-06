@@ -13,8 +13,11 @@ import {
 document.addEventListener("DOMContentLoaded", async () => {
   // Check if AnkiConnect is available and set up the Anki UI
   setupAnkiConnect();
-  let keyHidden = true;
+  let keyHidden = false; // Changed to false to show API key by default
   let summarize = true;
+  
+  // Get reference to the hide key button early
+  const hideKey = document.getElementById("hide-key");
 
   // Function to send flashcards to Anki
   window.sendToAnki = async function (flashcardsArray, title) {
@@ -131,10 +134,19 @@ document.addEventListener("DOMContentLoaded", async () => {
       ankiDeckSelect.disabled = true;
     }
   }
-  // Load saved API key if exists
-  chrome.storage.sync.get(["apiKey"], function (result) {
+  // Load saved API key and hidden state if exists
+  chrome.storage.sync.get(["apiKey", "keyHidden"], function (result) {
     if (result.apiKey) {
       document.getElementById("api-key").value = result.apiKey;
+    }
+    
+    // If user has previously used the extension and chosen to hide the API key
+    if (result.keyHidden !== undefined) {
+      keyHidden = result.keyHidden;
+      hideKey.textContent = keyHidden ? "Show API-key" : "Hide API-key";
+      document.getElementById("key-container").style.display = keyHidden
+        ? "none" 
+        : "block";
     }
   });
 
@@ -174,13 +186,17 @@ document.addEventListener("DOMContentLoaded", async () => {
       ? "text"
       : "password";
   });
-  const hideKey = document.getElementById("hide-key");
+  
+  // Set up hide key button click handler
   hideKey.addEventListener("click", () => {
     keyHidden = !keyHidden;
     hideKey.textContent = keyHidden ? "Show API-key" : "Hide API-key";
-    document.getElementById("key-container").style = keyHidden
-      ? "display: none"
-      : "display: block";
+    document.getElementById("key-container").style.display = keyHidden
+      ? "none"
+      : "block";
+    
+    // Save the key visibility preference to storage
+    chrome.storage.sync.set({ keyHidden: keyHidden });
   });
 
   // Load preferences from storage
