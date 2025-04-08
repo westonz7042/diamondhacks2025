@@ -1,12 +1,5 @@
 // background.js
-
-// We get the API key from storage now
-let API_KEY = "";
-
-// Function to create the endpoint URL with the latest API key
-function getEndpoint() {
-  return `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
-}
+import { callModel } from "./modelcall.js";
 
 // URL utility functions
 function getHostnameFromUrl(url) {
@@ -317,46 +310,21 @@ chrome.tabs.onActivated.addListener(function (activeInfo) {
 const pdfStatus = {}; // key: tabId, value: true/false
 
 // Function to clean up text using Gemini API
-function cleanupTextWithAPI(text, apiKey) {
-  // Use the API key passed from the request
-  API_KEY = apiKey;
+async function cleanupTextWithAPI(text, apiKey) {
+  const prompt = `Extract and clean the content from this webpage text. Keep the important information including title, main body, and key points. Remove navigation elements, ads, footers, and other non-essential content:\n\n${text}`;
 
-  return fetch(getEndpoint(), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [
-        {
-          parts: [
-            {
-              text: `Extract and clean the content from this webpage text. Keep the important information including title, main body, and key points. Remove navigation elements, ads, footers, and other non-essential content:\n\n${text}`,
-            },
-          ],
-        },
-      ],
-    }),
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      if (data.error) {
-        console.error("API Error:", data.error);
-        return { error: data.error.message, success: false };
-      }
+  try {
+    const response = await callModel(prompt, apiKey);
+    if (!response.success) {
+      return { error: response.error, success: false };
+    }
 
-      const cleanedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-      if (!cleanedText) {
-        console.error("No cleaned text found in the response.");
-        return { error: "No cleaned text found in response", success: false };
-      }
-
-      console.log("✨ Text cleaned successfully");
-      return { content: cleanedText, success: true };
-    })
-    .catch((error) => {
-      console.error("Text cleanup request failed:", error);
-      return { error: error.message, success: false };
-    });
+    console.log("✨ Text cleaned successfully");
+    return { content: response.content, success: true };
+  } catch (error) {
+    console.error("Text cleanup request failed:", error);
+    return { error: error.message, success: false };
+  }
 }
 
 // This listener will be called when the popup requests content extraction or when selection-based generation is requested
@@ -377,7 +345,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // Store API key for use by other parts of the extension
     if (request.apiKey) {
       chrome.storage.sync.set({ apiKey: request.apiKey });
-      API_KEY = request.apiKey;
     }
 
     // Execute content script
@@ -520,20 +487,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       request.content.substring(0, 100) + "..."
     );
 
-    // Store or use the API key
-    if (request.apiKey) {
-      API_KEY = request.apiKey;
-    } else {
-      // If no API key provided, try to get from storage
-      chrome.storage.sync.get(["apiKey"], function (result) {
-        if (result.apiKey) {
-          API_KEY = result.apiKey;
-        }
-      });
-    }
-
     // Make sure we have an API key
-    if (!API_KEY) {
+    const apiKey = request.apiKey || null;
+    if (!apiKey) {
       console.error("No API key available");
       sendResponse({
         success: false,
@@ -544,8 +500,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 
     // Call the Gemini API directly here, rather than using the imported function
-    // This avoids issues with module loading and Chrome storage async behavior
     const promptText = `
+      CRITICAL INSTRUCTION: You MUST respond with ONLY a single flashcard in CSV format: "Question","Answer"
+      
+      Format requirements:
+      1. Response MUST be a single line in CSV format
+      2. Response must contain EXACTLY one question and one answer
+      3. Both question and answer must be surrounded by double quotes
+      4. Any internal double quotes must be escaped with another double quote
+      5. DO NOT include any markdown formatting
+      6. DO NOT include any explanation text before or after the CSV
+      7. DO NOT include column headers
+      
+      Example of EXACTLY how your response should be formatted:
+      "What is photosynthesis?","The process by which plants convert light energy into chemical energy"
+      
       Create 1 high-quality flashcard based on the following article. Follow these essential guidelines:
       
       • Each card must focus on ONE specific concept (atomic knowledge)
@@ -561,38 +530,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       • For concepts: Address attributes, similarities/differences, and significance
       • For procedures: Focus on decision points and critical parameters
       
-      Your output must be in CSV format with each row as: Question,Answer
-      Do not include headers or file type information.
-      
       Article:
       ${request.content}
+      
+      REMEMBER: Your entire response MUST be ONLY a single line in CSV format: "Question","Answer" - nothing else.
     `;
 
-    fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [{ text: promptText }],
-            },
-          ],
-        }),
-      }
-    )
-      .then((response) => response.json())
-      .then((data) => {
-        if (data.error) {
-          throw new Error(data.error.message || "API error");
+    callModel(promptText, apiKey)
+      .then((response) => {
+        if (!response.success) {
+          throw new Error(response.error || "API error");
         }
 
-        const csvOutput = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!csvOutput) {
-          throw new Error("No flashcard content returned");
-        }
-
+        const csvOutput = response.content;
+        
         // Clean up any headers like "Question,Answer"
         const lines = csvOutput.trim().split("\n");
         while (

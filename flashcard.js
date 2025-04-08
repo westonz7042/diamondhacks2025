@@ -1,26 +1,24 @@
 //flashcard.js
-
-// We get the API key from storage
-let API_KEY = "";
-
-// Function to create the endpoint URL with the latest API key
-function getEndpoint() {
-  return `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
-}
+import { callModel } from "./modelcall.js";
 
 export async function generateFlashcards(text, userPreference) {
-  // Get the latest API key from storage
-  return new Promise((resolve, reject) => {
-    chrome.storage.sync.get(["apiKey"], async function (result) {
-      if (result.apiKey) {
-        API_KEY = result.apiKey;
-      }
-
-      const prompt = `
-
-      Output MUST be an array of json objects with the format: "front":question, "back":answer. Do not include the word json at the start of the output for labeling. I understand it is helpful, but you MUST not include it, the word json at the beginning.
-      Create high-quality flashcards based on the following article. Follow these essential guidelines and create AT MOST fifteen flashcards:
-
+  try {
+    const prompt = `
+      CRITICAL INSTRUCTION: You MUST respond with ONLY a valid JSON array of objects. No prose, explanations, or labels before or after the JSON. 
+      
+      Format requirements:
+      1. Response MUST be a single valid JSON array of objects
+      2. Each object MUST have exactly two fields: "front" and "back"
+      3. Each "front" field contains a question
+      4. Each "back" field contains the answer
+      5. DO NOT include any markdown formatting (no \`\`\`json, no \`\`\` at start or end)
+      6. DO NOT include any explanation text before or after the JSON
+      7. JSON should start with [ and end with ]
+      8. Create AT MOST fifteen flashcards
+      
+      Example of EXACTLY how your response should be formatted:
+      [{"front":"What is photosynthesis?","back":"The process by which plants convert light energy into chemical energy"},{"front":"Who wrote Hamlet?","back":"William Shakespeare"}]
+      
       This is primary:
       ${userPreference ? userPreference : ""}
       
@@ -32,63 +30,47 @@ export async function generateFlashcards(text, userPreference) {
       • Avoid yes/no questions or questions with binary answers
       • When referencing authors, use specific names instead of "the author"
       • Questions should require genuine recall, not just recognition
-      • Do not provide any HTML syntax, or use HTML-injection-safe syntax
+      • Do not provide any HTML syntax
       
       Consider these knowledge types:
       • For facts: Break complex facts into atomic units
       • For concepts: Address attributes, similarities/differences, and significance
       • For procedures: Focus on decision points and critical parameters
-    
-      
-      
-      
       
       Article:
       \n\n${text}
       
-      `;
+      REMEMBER: Your entire response MUST be ONLY a valid JSON array of objects with "front" and "back" fields, nothing else.
+    `;
 
-      try {
-        const response = await fetch(getEndpoint(), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [{ text: prompt }],
-              },
-            ],
-          }),
-        });
+    const response = await callModel(prompt);
+    if (!response.success) {
+      throw new Error(response.error || "Failed to generate flashcards");
+    }
 
-        const data = await response.json();
-        if (data.error) {
-          console.error("API Error:", data.error.message);
-          reject(data.error.message);
-          return;
-        }
-        console.log(data);
-
-        const csvOutput = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!csvOutput) {
-          console.error("No flashcard content returned.");
-          reject("No flashcard content returned");
-          return;
-        }
-        const lines = csvOutput.trim().split("\n");
-
-        while (
-          lines[0].toLowerCase().includes("question") &&
-          lines[0].toLowerCase().includes("answer")
-        ) {
-          lines.shift();
-        }
-        const csvOutput2 = lines.join("\n");
-        resolve(csvOutput2);
-      } catch (error) {
-        console.error("Request failed:", error);
-        reject(error);
-      }
-    });
-  });
+    let cleanOutput = response.content.trim();
+    
+    // Remove any markdown code blocks if present
+    cleanOutput = cleanOutput.replace(/^```json\s*/i, '').replace(/\s*```$/i, '');
+    
+    // Remove any explanatory text before the JSON array
+    const jsonStartIndex = cleanOutput.indexOf('[');
+    const jsonEndIndex = cleanOutput.lastIndexOf(']') + 1;
+    
+    if (jsonStartIndex >= 0 && jsonEndIndex > jsonStartIndex) {
+      cleanOutput = cleanOutput.substring(jsonStartIndex, jsonEndIndex);
+    }
+    
+    // Additional safety check to ensure we have valid JSON
+    try {
+      JSON.parse(cleanOutput); // This will throw if invalid
+      return cleanOutput;
+    } catch (error) {
+      console.error("Invalid JSON response:", cleanOutput);
+      throw new Error("The API returned an invalid JSON response. Please try again.");
+    }
+  } catch (error) {
+    console.error("Request failed:", error);
+    throw error;
+  }
 }

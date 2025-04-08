@@ -1,6 +1,24 @@
 // content.js
 console.log("Text extractor content script loaded");
 
+// Helper function to clean up any duplicate buttons
+function cleanupDuplicateButtons() {
+  const existingButtons = document.querySelectorAll('#anki-card-creator-button');
+  if (existingButtons.length > 1) {
+    console.log(`Found ${existingButtons.length} highlight buttons, cleaning up duplicates`);
+    // Keep the first one and remove others
+    for (let i = 1; i < existingButtons.length; i++) {
+      existingButtons[i].parentNode.removeChild(existingButtons[i]);
+    }
+  }
+}
+
+// Clean up immediately when script loads
+cleanupDuplicateButtons();
+
+// Also clean up when DOM is fully loaded
+document.addEventListener("DOMContentLoaded", cleanupDuplicateButtons);
+
 // Function to extract page content
 function extractPageContent() {
   try {
@@ -53,7 +71,15 @@ window.floatingButton = window.floatingButton || null;
 window.selectionTimeout = window.selectionTimeout || null;
 
 function createFloatingButton() {
-  // Create button if it doesn't exist
+  // First check if button already exists in the DOM
+  const existingButton = document.getElementById('anki-card-creator-button');
+  if (existingButton) {
+    // Use the existing button if found
+    window.floatingButton = existingButton;
+    return window.floatingButton;
+  }
+  
+  // Create button if it doesn't exist in DOM or window reference
   if (!window.floatingButton) {
     window.floatingButton = document.createElement('div');
     window.floatingButton.id = 'anki-card-creator-button';
@@ -186,7 +212,11 @@ function updateFloatingButtonPosition() {
   
   button.style.top = `${Math.max(0, top)}px`;
   button.style.left = `${Math.max(0, left)}px`;
-  button.style.display = 'block';
+  
+  // Only show if not already visible to prevent flickering
+  if (button.style.display !== 'block') {
+    button.style.display = 'block';
+  }
 }
 
 // Hide the floating button
