@@ -5,7 +5,7 @@ let API_KEY = "";
 
 // Function to create the endpoint URL with the latest API key
 function getEndpoint() {
-  return `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
+  return "https://openrouter.ai/api/v1/chat/completions";
 }
 
 // URL utility functions
@@ -323,17 +323,25 @@ function cleanupTextWithAPI(text, apiKey) {
 
   return fetch(getEndpoint(), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { 
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${API_KEY}`,
+      "HTTP-Referer": "anki-card-creator",
+      "X-Title": "Anki Card Creator"
+    },
     body: JSON.stringify({
-      contents: [
+      model: "google/gemini-2.5-pro-exp-03-25:free",
+      messages: [
         {
-          parts: [
+          role: "user",
+          content: [
             {
-              text: `Extract and clean the content from this webpage text. Keep the important information including title, main body, and key points. Remove navigation elements, ads, footers, and other non-essential content:\n\n${text}`,
-            },
-          ],
-        },
-      ],
+              type: "text",
+              text: `Extract and clean the content from this webpage text. Keep the important information including title, main body, and key points. Remove navigation elements, ads, footers, and other non-essential content:\n\n${text}`
+            }
+          ]
+        }
+      ]
     }),
   })
     .then((response) => response.json())
@@ -343,7 +351,7 @@ function cleanupTextWithAPI(text, apiKey) {
         return { error: data.error.message, success: false };
       }
 
-      const cleanedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      const cleanedText = data.choices?.[0]?.message?.content;
 
       if (!cleanedText) {
         console.error("No cleaned text found in the response.");
@@ -546,6 +554,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // Call the Gemini API directly here, rather than using the imported function
     // This avoids issues with module loading and Chrome storage async behavior
     const promptText = `
+      CRITICAL INSTRUCTION: You MUST respond with ONLY a single flashcard in CSV format: "Question","Answer"
+      
+      Format requirements:
+      1. Response MUST be a single line in CSV format
+      2. Response must contain EXACTLY one question and one answer
+      3. Both question and answer must be surrounded by double quotes
+      4. Any internal double quotes must be escaped with another double quote
+      5. DO NOT include any markdown formatting
+      6. DO NOT include any explanation text before or after the CSV
+      7. DO NOT include column headers
+      
+      Example of EXACTLY how your response should be formatted:
+      "What is photosynthesis?","The process by which plants convert light energy into chemical energy"
+      
       Create 1 high-quality flashcard based on the following article. Follow these essential guidelines:
       
       • Each card must focus on ONE specific concept (atomic knowledge)
@@ -561,24 +583,35 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       • For concepts: Address attributes, similarities/differences, and significance
       • For procedures: Focus on decision points and critical parameters
       
-      Your output must be in CSV format with each row as: Question,Answer
-      Do not include headers or file type information.
-      
       Article:
       ${request.content}
+      
+      REMEMBER: Your entire response MUST be ONLY a single line in CSV format: "Question","Answer" - nothing else.
     `;
 
     fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`,
+      getEndpoint(),
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${API_KEY}`,
+          "HTTP-Referer": "anki-card-creator",
+          "X-Title": "Anki Card Creator"
+        },
         body: JSON.stringify({
-          contents: [
+          model: "google/gemini-2.5-pro-exp-03-25:free",
+          messages: [
             {
-              parts: [{ text: promptText }],
-            },
-          ],
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: promptText
+                }
+              ]
+            }
+          ]
         }),
       }
     )
@@ -588,7 +621,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           throw new Error(data.error.message || "API error");
         }
 
-        const csvOutput = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        const csvOutput = data.choices?.[0]?.message?.content;
         if (!csvOutput) {
           throw new Error("No flashcard content returned");
         }

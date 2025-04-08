@@ -1,7 +1,7 @@
 let API_KEY = "";
 // Function to create the endpoint URL with the latest API key
 function getEndpoint() {
-  return `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
+  return "https://openrouter.ai/api/v1/chat/completions";
 }
 
 export async function summarizeArticle(text, userPreference) {
@@ -15,19 +15,27 @@ export async function summarizeArticle(text, userPreference) {
       try {
         const response = await fetch(getEndpoint(), {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${API_KEY}`,
+            "HTTP-Referer": "anki-card-creator",
+            "X-Title": "Anki Card Creator"
+          },
           body: JSON.stringify({
-            contents: [
+            model: "google/gemini-2.5-pro-exp-03-25:free",
+            messages: [
               {
-                parts: [
+                role: "user",
+                content: [
                   {
+                    type: "text",
                     text: `Summarize this with main ideas:${
                       userPreference ? userPreference : ""
-                    }\n\n${text}`,
-                  },
-                ],
-              },
-            ],
+                    }\n\n${text}`
+                  }
+                ]
+              }
+            ]
           }),
         });
 
@@ -38,7 +46,7 @@ export async function summarizeArticle(text, userPreference) {
           return;
         }
 
-        const summary = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        const summary = data.choices?.[0]?.message?.content;
 
         if (!summary) {
           console.error("No summary found in the response.");

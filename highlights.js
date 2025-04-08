@@ -359,6 +359,20 @@ export async function generateFromHighlights() {
 
               // Build the prompt with both highlights and article context
               const specialPrompt = `
+            CRITICAL INSTRUCTION: You MUST respond with ONLY a valid JSON array of objects. No prose, explanations, or labels before or after the JSON.
+            
+            Format requirements:
+            1. Response MUST be a single valid JSON array of objects
+            2. Each object MUST have exactly two fields: "front" and "back"
+            3. Each "front" field contains a question
+            4. Each "back" field contains the answer
+            5. DO NOT include any markdown formatting (no \`\`\`json, no \`\`\` at start or end)
+            6. DO NOT include any explanation text before or after the JSON
+            7. JSON should start with [ and end with ]
+            
+            Example of EXACTLY how your response should be formatted:
+            [{"front":"What is photosynthesis?","back":"The process by which plants convert light energy into chemical energy"},{"front":"Who wrote Hamlet?","back":"William Shakespeare"}]
+            
             For this task, I'm providing you with HIGHLIGHTED TEXT passages${websiteInfo}.
             Generate one high-quality flashcard focusing SPECIFICALLY on each of the highlighted passages.
             Use the full article for context to create better cards.
@@ -370,6 +384,8 @@ export async function generateFromHighlights() {
             
             FULL ARTICLE (for context):
             ${fullArticle || "No article context available"}
+            
+            REMEMBER: Your entire response MUST be ONLY a valid JSON array of objects with "front" and "back" fields, nothing else.
             `;
 
               // Generate the flashcards from the data

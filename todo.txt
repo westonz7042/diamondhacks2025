@@ -1,0 +1,4 @@
+- choosing your own model from openrouter
+- editing of cards after their generated
+- hiding of prompt preference
+- make a demo video in the readme
