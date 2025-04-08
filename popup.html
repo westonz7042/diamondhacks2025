@@ -16,7 +16,10 @@
       style="display: flex; flex-direction: row; justify-content: space-between"
     >
       <h3>FLASHcard Generator</h3>
-      <u id="hide-key">Hide API-key</u>
+      <div>
+        <u id="hide-prompt" style="margin-right: 10px;">Hide Prompt</u>
+        <u id="hide-key">Hide API-key</u>
+      </div>
     </div>
 
     <div id="key-container" style="display: block">
@@ -36,7 +39,7 @@
         >
       </div>
     </div>
-    <div style="margin-bottom: 15px">
+    <div id="prompt-container" style="margin-bottom: 15px; display: block;">
       <label for="pref">Prompt Preference:</label>
       <input
         type="text"

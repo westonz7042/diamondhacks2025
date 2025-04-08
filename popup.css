@@ -37,8 +37,8 @@ button:hover {
   font-family: "Poppins", sans-serif;
 }
 
-#hide-key {
-  display: block;
+#hide-key, #hide-prompt {
+  display: inline-block;
   margin-top: 0.17em;
   color: #725ac1;
   cursor: pointer;

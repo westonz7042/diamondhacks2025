@@ -14,10 +14,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Check if AnkiConnect is available and set up the Anki UI
   setupAnkiConnect();
   let keyHidden = false; // Changed to false to show API key by default
+  let promptHidden = false; // Initially show prompt preference
   let summarize = true;
 
   // Get reference to the hide key button early
   const hideKey = document.getElementById("hide-key");
+  const hidePrompt = document.getElementById("hide-prompt");
 
   // Function to send flashcards to Anki
   window.sendToAnki = async function (flashcardsArray, title) {
@@ -150,8 +152,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       ankiDeckSelect.disabled = true;
     }
   }
-  // Load saved API key and hidden state if exists
-  chrome.storage.sync.get(["apiKey", "keyHidden"], function (result) {
+  
+  // Load saved API key, prompt preference, and hidden states
+  chrome.storage.sync.get(["apiKey", "keyHidden", "promptHidden", "pref"], function (result) {
     if (result.apiKey) {
       document.getElementById("api-key").value = result.apiKey;
     }
@@ -163,6 +166,20 @@ document.addEventListener("DOMContentLoaded", async () => {
       document.getElementById("key-container").style.display = keyHidden
         ? "none"
         : "block";
+    }
+    
+    // If user has previously chosen to hide the prompt preference
+    if (result.promptHidden !== undefined) {
+      promptHidden = result.promptHidden;
+      hidePrompt.textContent = promptHidden ? "Show Prompt" : "Hide Prompt";
+      document.getElementById("prompt-container").style.display = promptHidden
+        ? "none"
+        : "block";
+    }
+    
+    // Load saved prompt preference
+    if (result.pref) {
+      document.getElementById("pref").value = result.pref;
     }
   });
 
@@ -214,12 +231,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Save the key visibility preference to storage
     chrome.storage.sync.set({ keyHidden: keyHidden });
   });
+  
+  // Set up hide prompt button click handler
+  hidePrompt.addEventListener("click", () => {
+    promptHidden = !promptHidden;
+    hidePrompt.textContent = promptHidden ? "Show Prompt" : "Hide Prompt";
+    document.getElementById("prompt-container").style.display = promptHidden
+      ? "none"
+      : "block";
 
-  // Load preferences from storage
-  chrome.storage.sync.get(["pref"], function (result) {
-    if (result.pref) {
-      document.getElementById("pref").value = result.pref;
-    }
+    // Save the prompt visibility preference to storage
+    chrome.storage.sync.set({ promptHidden: promptHidden });
   });
 
   // Load saved highlights and display them
