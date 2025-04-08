@@ -1,12 +1,5 @@
 // background.js
-
-// We get the API key from storage now
-let API_KEY = "";
-
-// Function to create the endpoint URL with the latest API key
-function getEndpoint() {
-  return "https://openrouter.ai/api/v1/chat/completions";
-}
+import { callModel } from "./modelcall.js";
 
 // URL utility functions
 function getHostnameFromUrl(url) {
@@ -317,54 +310,21 @@ chrome.tabs.onActivated.addListener(function (activeInfo) {
 const pdfStatus = {}; // key: tabId, value: true/false
 
 // Function to clean up text using Gemini API
-function cleanupTextWithAPI(text, apiKey) {
-  // Use the API key passed from the request
-  API_KEY = apiKey;
+async function cleanupTextWithAPI(text, apiKey) {
+  const prompt = `Extract and clean the content from this webpage text. Keep the important information including title, main body, and key points. Remove navigation elements, ads, footers, and other non-essential content:\n\n${text}`;
 
-  return fetch(getEndpoint(), {
-    method: "POST",
-    headers: { 
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${API_KEY}`,
-      "HTTP-Referer": "anki-card-creator",
-      "X-Title": "Anki Card Creator"
-    },
-    body: JSON.stringify({
-      model: "google/gemini-2.5-pro-exp-03-25:free",
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: `Extract and clean the content from this webpage text. Keep the important information including title, main body, and key points. Remove navigation elements, ads, footers, and other non-essential content:\n\n${text}`
-            }
-          ]
-        }
-      ]
-    }),
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      if (data.error) {
-        console.error("API Error:", data.error);
-        return { error: data.error.message, success: false };
-      }
+  try {
+    const response = await callModel(prompt, apiKey);
+    if (!response.success) {
+      return { error: response.error, success: false };
+    }
 
-      const cleanedText = data.choices?.[0]?.message?.content;
-
-      if (!cleanedText) {
-        console.error("No cleaned text found in the response.");
-        return { error: "No cleaned text found in response", success: false };
-      }
-
-      console.log("✨ Text cleaned successfully");
-      return { content: cleanedText, success: true };
-    })
-    .catch((error) => {
-      console.error("Text cleanup request failed:", error);
-      return { error: error.message, success: false };
-    });
+    console.log("✨ Text cleaned successfully");
+    return { content: response.content, success: true };
+  } catch (error) {
+    console.error("Text cleanup request failed:", error);
+    return { error: error.message, success: false };
+  }
 }
 
 // This listener will be called when the popup requests content extraction or when selection-based generation is requested
@@ -385,7 +345,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // Store API key for use by other parts of the extension
     if (request.apiKey) {
       chrome.storage.sync.set({ apiKey: request.apiKey });
-      API_KEY = request.apiKey;
     }
 
     // Execute content script
@@ -528,20 +487,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       request.content.substring(0, 100) + "..."
     );
 
-    // Store or use the API key
-    if (request.apiKey) {
-      API_KEY = request.apiKey;
-    } else {
-      // If no API key provided, try to get from storage
-      chrome.storage.sync.get(["apiKey"], function (result) {
-        if (result.apiKey) {
-          API_KEY = result.apiKey;
-        }
-      });
-    }
-
     // Make sure we have an API key
-    if (!API_KEY) {
+    const apiKey = request.apiKey || null;
+    if (!apiKey) {
       console.error("No API key available");
       sendResponse({
         success: false,
@@ -552,7 +500,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 
     // Call the Gemini API directly here, rather than using the imported function
-    // This avoids issues with module loading and Chrome storage async behavior
     const promptText = `
       CRITICAL INSTRUCTION: You MUST respond with ONLY a single flashcard in CSV format: "Question","Answer"
       
@@ -589,43 +536,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       REMEMBER: Your entire response MUST be ONLY a single line in CSV format: "Question","Answer" - nothing else.
     `;
 
-    fetch(
-      getEndpoint(),
-      {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${API_KEY}`,
-          "HTTP-Referer": "anki-card-creator",
-          "X-Title": "Anki Card Creator"
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-pro-exp-03-25:free",
-          messages: [
-            {
-              role: "user",
-              content: [
-                {
-                  type: "text",
-                  text: promptText
-                }
-              ]
-            }
-          ]
-        }),
-      }
-    )
-      .then((response) => response.json())
-      .then((data) => {
-        if (data.error) {
-          throw new Error(data.error.message || "API error");
+    callModel(promptText, apiKey)
+      .then((response) => {
+        if (!response.success) {
+          throw new Error(response.error || "API error");
         }
 
-        const csvOutput = data.choices?.[0]?.message?.content;
-        if (!csvOutput) {
-          throw new Error("No flashcard content returned");
-        }
-
+        const csvOutput = response.content;
+        
         // Clean up any headers like "Question,Answer"
         const lines = csvOutput.trim().split("\n");
         while (

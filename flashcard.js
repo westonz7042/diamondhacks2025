@@ -1,22 +1,9 @@
 //flashcard.js
-
-// We get the API key from storage
-let API_KEY = "";
-
-// Function to create the endpoint URL with the latest API key
-function getEndpoint() {
-  return "https://openrouter.ai/api/v1/chat/completions";
-}
+import { callModel } from "./modelcall.js";
 
 export async function generateFlashcards(text, userPreference) {
-  // Get the latest API key from storage
-  return new Promise((resolve, reject) => {
-    chrome.storage.sync.get(["apiKey"], async function (result) {
-      if (result.apiKey) {
-        API_KEY = result.apiKey;
-      }
-
-      const prompt = `
+  try {
+    const prompt = `
       CRITICAL INSTRUCTION: You MUST respond with ONLY a valid JSON array of objects. No prose, explanations, or labels before or after the JSON. 
       
       Format requirements:
@@ -54,73 +41,36 @@ export async function generateFlashcards(text, userPreference) {
       \n\n${text}
       
       REMEMBER: Your entire response MUST be ONLY a valid JSON array of objects with "front" and "back" fields, nothing else.
-      `;
+    `;
 
-      try {
-        const response = await fetch(getEndpoint(), {
-          method: "POST",
-          headers: { 
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${API_KEY}`,
-            "HTTP-Referer": "anki-card-creator",
-            "X-Title": "Anki Card Creator"
-          },
-          body: JSON.stringify({
-            model: "google/gemini-2.5-pro-exp-03-25:free",
-            messages: [
-              {
-                role: "user",
-                content: [
-                  {
-                    type: "text",
-                    text: prompt
-                  }
-                ]
-              }
-            ]
-          }),
-        });
+    const response = await callModel(prompt);
+    if (!response.success) {
+      throw new Error(response.error || "Failed to generate flashcards");
+    }
 
-        const data = await response.json();
-        if (data.error) {
-          console.error("API Error:", data.error.message);
-          reject(data.error.message);
-          return;
-        }
-        console.log(data);
-
-        const csvOutput = data.choices?.[0]?.message?.content;
-        if (!csvOutput) {
-          console.error("No flashcard content returned.");
-          reject("No flashcard content returned");
-          return;
-        }
-        // Clean up the output to ensure it's valid JSON
-        let cleanOutput = csvOutput.trim();
-        
-        // Remove any markdown code blocks if present
-        cleanOutput = cleanOutput.replace(/^```json\s*/i, '').replace(/\s*```$/i, '');
-        
-        // Remove any explanatory text before the JSON array
-        const jsonStartIndex = cleanOutput.indexOf('[');
-        const jsonEndIndex = cleanOutput.lastIndexOf(']') + 1;
-        
-        if (jsonStartIndex >= 0 && jsonEndIndex > jsonStartIndex) {
-          cleanOutput = cleanOutput.substring(jsonStartIndex, jsonEndIndex);
-        }
-        
-        // Additional safety check to ensure we have valid JSON
-        try {
-          JSON.parse(cleanOutput); // This will throw if invalid
-          resolve(cleanOutput);
-        } catch (error) {
-          console.error("Invalid JSON response:", cleanOutput);
-          reject("The API returned an invalid JSON response. Please try again.");
-        }
-      } catch (error) {
-        console.error("Request failed:", error);
-        reject(error);
-      }
-    });
-  });
+    let cleanOutput = response.content.trim();
+    
+    // Remove any markdown code blocks if present
+    cleanOutput = cleanOutput.replace(/^```json\s*/i, '').replace(/\s*```$/i, '');
+    
+    // Remove any explanatory text before the JSON array
+    const jsonStartIndex = cleanOutput.indexOf('[');
+    const jsonEndIndex = cleanOutput.lastIndexOf(']') + 1;
+    
+    if (jsonStartIndex >= 0 && jsonEndIndex > jsonStartIndex) {
+      cleanOutput = cleanOutput.substring(jsonStartIndex, jsonEndIndex);
+    }
+    
+    // Additional safety check to ensure we have valid JSON
+    try {
+      JSON.parse(cleanOutput); // This will throw if invalid
+      return cleanOutput;
+    } catch (error) {
+      console.error("Invalid JSON response:", cleanOutput);
+      throw new Error("The API returned an invalid JSON response. Please try again.");
+    }
+  } catch (error) {
+    console.error("Request failed:", error);
+    throw error;
+  }
 }
