@@ -1,5 +1,5 @@
 - choosing your own model from openrouter
-- editing of cards after their generated
-- hiding of prompt preference
+- ~~editing of cards after their generated~~
+- ~~hiding of prompt preference~~
 - make a demo video in the readme
 - ~~add a "modelcall.js", removing the repeated api calling from flashcards.js, highlights.js, ..~~

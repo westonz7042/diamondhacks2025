@@ -197,6 +197,7 @@ h3 {
   border: 1px solid #888;
   border-radius: 6px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 20px;
@@ -211,11 +212,66 @@ h3 {
 .flashcard-controls {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   margin: 10px;
 }
 .button {
   width: 100px;
   font-family: "Poppins", sans-serif;
+}
+
+.edit-button {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background-color: #725ac1;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  width: auto;
+  padding: 3px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  z-index: 5;
+}
+
+.edit-button:hover {
+  background-color: #8d86c9;
+}
+
+.card-content {
+  width: 100%;
+  text-align: center;
+}
+
+.edit-textarea {
+  width: 90%;
+  height: 70%;
+  resize: none;
+  font-family: "Poppins", sans-serif;
+  border-radius: 4px;
+  padding: 5px;
+  margin-bottom: 5px;
+}
+
+.edit-controls {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.edit-save, .edit-cancel {
+  background-color: #725ac1;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.edit-save:hover, .edit-cancel:hover {
+  background-color: #8d86c9;
 }
 .download-button {
   display: inline-block;

@@ -472,6 +472,10 @@ async function extractContent() {
 }
 export function displayQuizletFlashcards(flashcardsData) {
   let currentIndex = 0;
+  let isEditing = false;
+  // References to content elements that we'll update
+  let frontContent;
+  let backContent;
 
   // Ensure we have a valid array of flashcard objects
   let flashcardsArray;
@@ -509,19 +513,52 @@ export function displayQuizletFlashcards(flashcardsData) {
   flashcardBox.className = "flashcard-box";
   flashcardBox.appendChild(card);
 
+  // Create front face with content div
   const front = document.createElement("div");
   front.className = "flashcard-face front";
-  front.textContent = escapeHTML(flashcardsArray[currentIndex].front);
+  
+  frontContent = document.createElement("div");
+  frontContent.className = "card-content";
+  frontContent.textContent = escapeHTML(flashcardsArray[currentIndex].front);
+  front.appendChild(frontContent);
 
+  // Create back face with content div
   const back = document.createElement("div");
   back.className = "flashcard-face back";
-  back.textContent = escapeHTML(flashcardsArray[currentIndex].back);
+  
+  backContent = document.createElement("div");
+  backContent.className = "card-content";
+  backContent.textContent = escapeHTML(flashcardsArray[currentIndex].back);
+  back.appendChild(backContent);
+
+  // Create edit buttons for both faces
+  const frontEditBtn = document.createElement("button");
+  frontEditBtn.className = "edit-button";
+  frontEditBtn.textContent = "Edit";
+  frontEditBtn.onclick = (e) => {
+    e.stopPropagation(); // Prevent card flip
+    startEditing('front');
+  };
+
+  const backEditBtn = document.createElement("button");
+  backEditBtn.className = "edit-button";
+  backEditBtn.textContent = "Edit";
+  backEditBtn.onclick = (e) => {
+    e.stopPropagation(); // Prevent card flip
+    startEditing('back');
+  };
+
+  front.appendChild(frontEditBtn);
+  back.appendChild(backEditBtn);
 
   card.appendChild(front);
   card.appendChild(back);
 
   card.addEventListener("click", () => {
-    card.classList.toggle("flipped");
+    // Only allow flipping if we're not in edit mode
+    if (!isEditing) {
+      card.classList.toggle("flipped");
+    }
   });
 
   const controls = document.createElement("div");
@@ -533,7 +570,7 @@ export function displayQuizletFlashcards(flashcardsData) {
   const nums = document.createElement("div");
   nums.textContent = `${currentIndex + 1}/${flashcardsArray.length}`;
   prev.onclick = () => {
-    if (currentIndex > 0) {
+    if (currentIndex > 0 && !isEditing) {
       currentIndex--;
       updateCard();
     }
@@ -543,7 +580,7 @@ export function displayQuizletFlashcards(flashcardsData) {
   next.textContent = "Next";
   next.className = "button";
   next.onclick = () => {
-    if (currentIndex < flashcardsArray.length - 1) {
+    if (currentIndex < flashcardsArray.length - 1 && !isEditing) {
       currentIndex++;
       updateCard();
     }
@@ -558,18 +595,185 @@ export function displayQuizletFlashcards(flashcardsData) {
   document.getElementById("result").appendChild(container);
 
   function updateCard() {
+    // Get the current card's content from the array
+    const currentFront = flashcardsArray[currentIndex].front;
+    const currentBack = flashcardsArray[currentIndex].back;
+    
+    console.log(`Showing card ${currentIndex + 1}: Front="${currentFront}", Back="${currentBack}"`);
+    
     if (card.classList.contains("flipped")) {
       card.classList.remove("flipped"); // reset to front view
       setTimeout(() => {
-        front.textContent = flashcardsArray[currentIndex].front;
-        back.textContent = flashcardsArray[currentIndex].back;
+        frontContent.textContent = currentFront;
+        backContent.textContent = currentBack;
         nums.textContent = `${currentIndex + 1}/${flashcardsArray.length}`;
       }, 200);
     } else {
-      front.textContent = flashcardsArray[currentIndex].front;
-      back.textContent = flashcardsArray[currentIndex].back;
+      frontContent.textContent = currentFront;
+      backContent.textContent = currentBack;
       nums.textContent = `${currentIndex + 1}/${flashcardsArray.length}`;
     }
+  }
+
+  // Edit functionality
+  function startEditing(side) {
+    isEditing = true;
+    const currentFace = side === 'front' ? front : back;
+    // Get the specific content for the current card at the current index
+    const currentContent = flashcardsArray[currentIndex][side];
+    
+    console.log(`Starting to edit card ${currentIndex + 1} ${side}: "${currentContent}"`);
+    
+    // Clear the face content
+    while (currentFace.firstChild) {
+      currentFace.removeChild(currentFace.firstChild);
+    }
+
+    // Create textarea for editing
+    const textarea = document.createElement("textarea");
+    textarea.className = "edit-textarea";
+    textarea.value = currentContent;
+    currentFace.appendChild(textarea);
+    textarea.focus();
+
+    // Create save/cancel buttons
+    const editControls = document.createElement("div");
+    editControls.className = "edit-controls";
+
+    const saveBtn = document.createElement("button");
+    saveBtn.className = "edit-save";
+    saveBtn.textContent = "Save";
+    saveBtn.onclick = (e) => {
+      e.stopPropagation(); // Prevent card flip
+      saveEdit(side, textarea.value);
+    };
+
+    const cancelBtn = document.createElement("button");
+    cancelBtn.className = "edit-cancel";
+    cancelBtn.textContent = "Cancel";
+    cancelBtn.onclick = (e) => {
+      e.stopPropagation(); // Prevent card flip
+      cancelEdit(side);
+    };
+
+    editControls.appendChild(saveBtn);
+    editControls.appendChild(cancelBtn);
+    currentFace.appendChild(editControls);
+  }
+
+  function saveEdit(side, newContent) {
+    // Update ONLY the current flashcard's data
+    flashcardsArray[currentIndex][side] = newContent;
+    isEditing = false;
+    
+    // Restore the card face with new content
+    resetCardFace(side);
+    
+    console.log(`Updated card ${currentIndex + 1} ${side} to: ${newContent}`);
+  }
+
+  function cancelEdit(side) {
+    isEditing = false;
+    resetCardFace(side);
+  }
+
+  function resetCardFace(side) {
+    const currentFace = side === 'front' ? front : back;
+    // Get current card's specific content
+    const currentContent = flashcardsArray[currentIndex][side];
+    
+    // Clear the face
+    while (currentFace.firstChild) {
+      currentFace.removeChild(currentFace.firstChild);
+    }
+
+    // Restore content and edit button
+    const contentDiv = document.createElement("div");
+    contentDiv.className = "card-content";
+    contentDiv.textContent = currentContent;
+    currentFace.appendChild(contentDiv);
+
+    const editBtn = document.createElement("button");
+    editBtn.className = "edit-button";
+    editBtn.textContent = "Edit";
+    editBtn.onclick = (e) => {
+      e.stopPropagation();
+      startEditing(side);
+    };
+    currentFace.appendChild(editBtn);
+
+    // Update the correct content reference
+    if (side === 'front') {
+      frontContent = contentDiv;
+    } else {
+      backContent = contentDiv;
+    }
+    
+    // Make sure CSV and Anki export will use the updated data
+    updateExportButtons();
+  }
+  
+  // Update the export buttons to use the latest flashcard data
+  function updateExportButtons() {
+    // Update the "Send to Anki" button
+    const ankiButtons = document.querySelectorAll(".anki-button");
+    ankiButtons.forEach(button => {
+      // Remove old event listeners by cloning the button
+      const newAnkiButton = button.cloneNode(true);
+      button.parentNode.replaceChild(newAnkiButton, button);
+      
+      // Add updated event listener
+      newAnkiButton.onclick = () => sendToAnki(flashcardsArray, "Edited Flashcards");
+    });
+    
+    // Update the "Save as CSV" button
+    const csvButtons = document.querySelectorAll(".save-button");
+    csvButtons.forEach(button => {
+      // Remove old event listeners by cloning the button
+      const newCsvButton = button.cloneNode(true);
+      button.parentNode.replaceChild(newCsvButton, button);
+      
+      // Add updated event listener with latest data
+      newCsvButton.onclick = async () => {
+        try {
+          // Convert JSON to CSV format
+          const csvContent = flashcardsArray
+            .map(({ front, back }) => {
+              const escapedFront = `"${(front || "").replace(/"/g, '""')}"`;
+              const escapedBack = `"${(back || "").replace(/"/g, '""')}"`;
+              return `${escapedFront},${escapedBack}`;
+            })
+            .join("\n");
+            
+          const blob = new Blob([csvContent], { type: "text/csv" });
+          const sanitizedTitle = "edited_flashcards";
+          
+          if ("showSaveFilePicker" in window) {
+            const handle = await window.showSaveFilePicker({
+              suggestedName: `${sanitizedTitle}.csv`,
+              types: [
+                {
+                  description: "CSV file",
+                  accept: { "text/csv": [".csv"] },
+                },
+              ],
+            });
+            
+            const writable = await handle.createWritable();
+            await writable.write(blob);
+            await writable.close();
+          } else {
+            const url = URL.createObjectURL(blob);
+            const fallbackLink = document.createElement("a");
+            fallbackLink.href = url;
+            fallbackLink.download = `${sanitizedTitle}.csv`;
+            fallbackLink.click();
+          }
+        } catch (err) {
+          console.error("❌ Save canceled or failed:", err);
+        }
+      };
+    });
   }
 }
 async function summarizeContent() {
