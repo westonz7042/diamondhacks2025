@@ -14,7 +14,6 @@ export async function generateFlashcards(text, userPreference) {
       5. DO NOT include any markdown formatting (no \`\`\`json, no \`\`\` at start or end)
       6. DO NOT include any explanation text before or after the JSON
       7. JSON should start with [ and end with ]
-      8. Create AT MOST fifteen flashcards
       
       Example of EXACTLY how your response should be formatted:
       [{"front":"What is photosynthesis?","back":"The process by which plants convert light energy into chemical energy"},{"front":"Who wrote Hamlet?","back":"William Shakespeare"}]
