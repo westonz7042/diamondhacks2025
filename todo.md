@@ -6,3 +6,4 @@
 - ~~make change such that the flashcards are saved even after exiting the popup so you don't have to regenerate if you accidentally click out.~~
 - image support would be wild
 - make card generation faster!
+- add pdf highlighting support

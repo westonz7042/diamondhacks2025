@@ -702,6 +702,26 @@ export function displayQuizletFlashcards(flashcardsData) {
     // Restore the card face with new content
     resetCardFace(side);
     
+    // Save the updated flashcards to Chrome storage
+    chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+      const currentTabUrl = tabs[0].url;
+      
+      chrome.storage.local.get(['lastFlashcards'], function(result) {
+        if (result.lastFlashcards) {
+          // Update the flashcards array in the stored object
+          const updatedPageData = {
+            ...result.lastFlashcards,
+            flashcards: flashcardsArray
+          };
+          
+          // Save the updated data back to storage
+          chrome.storage.local.set({ 'lastFlashcards': updatedPageData }, function() {
+            console.log('Edited flashcards saved to storage');
+          });
+        }
+      });
+    });
+    
     console.log(`Updated card ${currentIndex + 1} ${side} to: ${newContent}`);
   }
 
