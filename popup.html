@@ -38,6 +38,29 @@
           >Show key</label
         >
       </div>
+      <div style="margin-bottom: 10px">
+        <label for="model-select">AI Model:</label>
+        <select
+          id="model-select"
+          style="
+            width: 100%;
+            padding: 5px;
+            border-radius: 4px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 12px;
+            background-color: RGBA(255, 255, 255, 0);
+            color: #fff;
+            margin-top: 5px;
+          "
+        >
+          <option value="google/gemini-2.5-pro-exp-03-25:free" selected>Gemini 2.5 Pro (Default)</option>
+          <option value="anthropic/claude-3.7-sonnet">Claude 3.7 Sonnet</option>
+          <option value="anthropic/claude-3.7-sonnet:thinking">Claude 3.7 Sonnet (Thinking)</option>
+          <option value="openai/chatgpt-4o-latest">ChatGPT-4o</option>
+          <option value="openai/gpt-4.5-preview">GPT-4.5 Preview</option>
+          <option value="anthropic/claude-3.5-sonnet:beta">Claude 3.5 Sonnet</option>
+        </select>
+      </div>
     </div>
     <div id="prompt-container" style="margin-bottom: 15px; display: block;">
       <label for="pref">Prompt Preference:</label>

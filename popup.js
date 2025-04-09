@@ -156,8 +156,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
   
-  // Load saved API key, prompt preference, and hidden states
-  chrome.storage.sync.get(["apiKey", "keyHidden", "promptHidden", "pref"], function (result) {
+  // Load saved API key, prompt preference, model selection, and hidden states
+  chrome.storage.sync.get(["apiKey", "keyHidden", "promptHidden", "pref", "selectedModel"], function (result) {
     if (result.apiKey) {
       document.getElementById("api-key").value = result.apiKey;
     }
@@ -183,6 +183,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Load saved prompt preference
     if (result.pref) {
       document.getElementById("pref").value = result.pref;
+    }
+    
+    // Load saved model selection
+    if (result.selectedModel) {
+      document.getElementById("model-select").value = result.selectedModel;
     }
   });
 
@@ -213,6 +218,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("pref").addEventListener("change", function () {
     const pref = document.getElementById("pref").value.trim();
     chrome.storage.sync.set({ pref: pref });
+  });
+  
+  // save model selection
+  document.getElementById("model-select").addEventListener("change", function () {
+    const selectedModel = document.getElementById("model-select").value;
+    chrome.storage.sync.set({ selectedModel: selectedModel });
+    console.log("Model changed to:", selectedModel);
   });
 
   // Styling
