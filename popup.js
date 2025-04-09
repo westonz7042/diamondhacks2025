@@ -13,6 +13,9 @@ import {
 document.addEventListener("DOMContentLoaded", async () => {
   // Check if AnkiConnect is available and set up the Anki UI
   setupAnkiConnect();
+  // Check for previously stored flashcards
+  checkForPreviousFlashcards();
+  
   let keyHidden = false; // Changed to false to show API key by default
   let promptHidden = false; // Initially show prompt preference
   let summarize = true;
@@ -254,6 +257,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   document
     .getElementById("generate-from-highlights")
     .addEventListener("click", highlights.generateFromHighlights);
+    
+  // Add event listener for loading previous flashcards
+  document
+    .getElementById("load-previous-flashcards")
+    .addEventListener("click", loadPreviousFlashcards);
 });
 
 async function extractContent() {
@@ -349,6 +357,19 @@ async function extractContent() {
                   resultElement.innerHTML = `<p>Error: Unexpected response format</p>`;
                   return;
                 }
+                
+                // Store the flashcards in Chrome storage with page title
+                const pageData = {
+                  title: response.title || "Untitled Page",
+                  timestamp: Date.now(),
+                  flashcards: jsonArray,
+                  url: tab.url
+                };
+                
+                // Save to Chrome storage
+                chrome.storage.local.set({ 'lastFlashcards': pageData }, function() {
+                  console.log('Flashcards saved to storage');
+                });
 
                 // Convert JSON to CSV format
                 const csvContent = jsonArray
@@ -908,6 +929,160 @@ function formatSummary(content) {
 // Helper function to convert **text** to <strong>text</strong>
 function convertToBold(text) {
   return text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+}
+
+// Function to check for previously saved flashcards
+function checkForPreviousFlashcards() {
+  // First get the current tab URL
+  chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+    if (!tabs || !tabs[0] || !tabs[0].url) {
+      console.error("Could not get current tab URL");
+      return;
+    }
+    
+    const currentTabUrl = tabs[0].url;
+    
+    // Get saved flashcards
+    chrome.storage.local.get(['lastFlashcards'], function(result) {
+      if (result.lastFlashcards) {
+        const flashcardsSection = document.getElementById('previous-flashcards-section');
+        const infoElement = document.getElementById('previous-flashcards-info');
+        
+        const pageData = result.lastFlashcards;
+        
+        // Only show if the saved flashcards are from the current URL
+        if (pageData.url === currentTabUrl) {
+          const timeAgo = getTimeAgo(pageData.timestamp);
+          
+          // Show the section
+          flashcardsSection.style.display = 'block';
+          
+          // Update info text
+          infoElement.textContent = `${pageData.title} (${timeAgo})`;
+        } else {
+          // Different URL, hide the section
+          flashcardsSection.style.display = 'none';
+        }
+      }
+    });
+  });
+}
+
+// Function to get human-readable time difference
+function getTimeAgo(timestamp) {
+  const now = Date.now();
+  const diff = now - timestamp;
+  
+  // Convert to minutes, hours, days
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+  
+  if (days > 0) {
+    return `${days} day${days > 1 ? 's' : ''} ago`;
+  } else if (hours > 0) {
+    return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+  } else if (minutes > 0) {
+    return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+  } else {
+    return 'just now';
+  }
+}
+
+// Function to load previously saved flashcards
+function loadPreviousFlashcards() {
+  // First get current tab URL
+  chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+    if (!tabs || !tabs[0] || !tabs[0].url) {
+      console.error("Could not get current tab URL");
+      return;
+    }
+    
+    const currentTabUrl = tabs[0].url;
+    
+    chrome.storage.local.get(['lastFlashcards'], function(result) {
+      if (result.lastFlashcards) {
+        const pageData = result.lastFlashcards;
+        
+        // Only load if the saved flashcards are from the current URL
+        if (pageData.url === currentTabUrl) {
+          const resultElement = document.getElementById('result');
+          resultElement.innerHTML = '';
+          resultElement.style.display = 'flex';
+          
+          const jsonArray = pageData.flashcards;
+      
+          // Create button container
+          const buttonContainer = document.createElement("div");
+          buttonContainer.className = "button-container";
+          
+          // Create "Save as CSV" button
+          const saveCsvButton = document.createElement("button");
+          saveCsvButton.textContent = "Save Flashcards as CSV";
+          saveCsvButton.className = "save-button";
+          saveCsvButton.onclick = async () => {
+            try {
+              // Convert JSON to CSV format
+              const csvContent = jsonArray
+                .map(({ front, back }) => {
+                  const escapedFront = `"${(front || "").replace(/"/g, '""')}"`;
+                  const escapedBack = `"${(back || "").replace(/"/g, '""')}"`;
+                  return `${escapedFront},${escapedBack}`;
+                })
+                .join("\n");
+                
+              const blob = new Blob([csvContent], { type: "text/csv" });
+              const sanitizedTitle = pageData.title.replace(/[^\w\s]/gi, "") || "flashcards";
+              
+              if ("showSaveFilePicker" in window) {
+                const handle = await window.showSaveFilePicker({
+                  suggestedName: `${sanitizedTitle}.csv`,
+                  types: [
+                    {
+                      description: "CSV file",
+                      accept: { "text/csv": [".csv"] },
+                    },
+                  ],
+                });
+                
+                const writable = await handle.createWritable();
+                await writable.write(blob);
+                await writable.close();
+              } else {
+                const url = URL.createObjectURL(blob);
+                const fallbackLink = document.createElement("a");
+                fallbackLink.href = url;
+                fallbackLink.download = `${sanitizedTitle}.csv`;
+                fallbackLink.click();
+              }
+            } catch (err) {
+              console.error("❌ Save canceled or failed:", err);
+            }
+          };
+          
+          // Create "Send to Anki" button
+          const ankiButton = document.createElement("button");
+          ankiButton.textContent = "Send to Anki";
+          ankiButton.className = "anki-button";
+          ankiButton.onclick = () => sendToAnki(jsonArray, pageData.title);
+          
+          // Add buttons to container
+          buttonContainer.appendChild(saveCsvButton);
+          buttonContainer.appendChild(ankiButton);
+          
+          resultElement.innerHTML = `
+            <h2 style="text-align: center; margin: 0px; gap: 0px;">${escapeHTML(pageData.title)}</h2>
+          `;
+          resultElement.appendChild(buttonContainer);
+          
+          // Display the flashcards
+          displayQuizletFlashcards(jsonArray);
+        } else {
+          console.log("Previous flashcards are for a different URL, not loading");
+        }
+      }
+    });
+  });
 }
 
 // Helper function to escape HTML for safe rendering

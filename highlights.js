@@ -416,6 +416,20 @@ export async function generateFromHighlights() {
                 resultElement.innerHTML = `<p>Error: Unexpected response format</p>`;
                 return;
               }
+              
+              // Store the flashcards in Chrome storage with page title
+              const pageData = {
+                title: tab.title || "Highlights from " + displayLocation,
+                timestamp: Date.now(),
+                flashcards: jsonArray,
+                url: tab.url,
+                isFromHighlights: true
+              };
+              
+              // Save to Chrome storage
+              chrome.storage.local.set({ 'lastFlashcards': pageData }, function() {
+                console.log('Highlight flashcards saved to storage');
+              });
 
               // Convert JSON to CSV format
               const csvContent = jsonArray

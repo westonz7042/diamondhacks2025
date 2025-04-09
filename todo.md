@@ -3,3 +3,5 @@
 - ~~hiding of prompt preference~~
 - make a demo video in the readme
 - ~~add a "modelcall.js", removing the repeated api calling from flashcards.js, highlights.js, ..~~
+- ~~make change such that the flashcards are saved even after exiting the popup so you don't have to regenerate if you accidentally click out.~~
+- image support would be wild
