@@ -309,24 +309,6 @@ chrome.tabs.onActivated.addListener(function (activeInfo) {
 
 const pdfStatus = {}; // key: tabId, value: true/false
 
-// Function to clean up text using Gemini API
-async function cleanupTextWithAPI(text, apiKey) {
-  const prompt = `Extract and clean the content from this webpage text. Keep the important information including title, main body, and key points. Remove navigation elements, ads, footers, and other non-essential content:\n\n${text}`;
-
-  try {
-    const response = await callModel(prompt, apiKey);
-    if (!response.success) {
-      return { error: response.error, success: false };
-    }
-
-    console.log("✨ Text cleaned successfully");
-    return { content: response.content, success: true };
-  } catch (error) {
-    console.error("Text cleanup request failed:", error);
-    return { error: error.message, success: false };
-  }
-}
-
 // This listener will be called when the popup requests content extraction or when selection-based generation is requested
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   // Check if the extension context is still valid
@@ -382,30 +364,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             console.log("Got response from content script:", response);
 
             if (response && response.success) {
-              try {
-                // Clean up the extracted text
-                console.log("Cleaning up extracted text...");
-                const cleanedResponse = await cleanupTextWithAPI(
-                  response.content,
-                  request.apiKey
-                );
-
-                if (cleanedResponse.success) {
-                  // Return the cleaned text
-                  sendResponse({
-                    title: response.title,
-                    content: cleanedResponse.content,
-                    success: true,
-                  });
-                } else {
-                  // If cleanup failed, return the original text
-                  console.warn("Text cleanup failed, returning original text");
-                  sendResponse(response);
-                }
-              } catch (error) {
-                console.error("Error in text cleanup:", error);
-                sendResponse(response); // Return original text if cleanup fails
-              }
+              // Skip the text cleanup step and directly send the extracted text
+              console.log("Directly using extracted text for flashcard generation");
+              sendResponse({
+                title: response.title,
+                content: response.content,
+                success: true,
+              });
             } else {
               // Just pass through the failed response
               sendResponse(response);
@@ -499,7 +464,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
     }
 
-    // Call the Gemini API directly here, rather than using the imported function
+    // Call API directly here, rather than using the imported function
     const promptText = `
       CRITICAL INSTRUCTION: You MUST respond with ONLY a single flashcard in CSV format: "Question","Answer"
       
