@@ -2,12 +2,7 @@
 
 A Chrome extension that extracts content from web pages and automatically creates Anki flashcards.
 
-
-<video width="320" height="240" controls>
-  <source src="demo.mp4" type="video/mp4">
-</video>
-
-
+![Demo](demo.gif)
 
 Created by Michael, Philip, Vincent, and Weston for DiamondHacks 2025.
 
