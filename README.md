@@ -2,16 +2,14 @@
 
 A Chrome extension that extracts content from web pages and automatically creates Anki flashcards.
 
+
+<video width="320" height="240" controls>
+  <source src="demo.mp4" type="video/mp4">
+</video>
+
+
+
 Created by Michael, Philip, Vincent, and Weston for DiamondHacks 2025.
-
-## Features
-
-- Extract and clean content from any web page
-- Generate high-quality flashcards and summaries with AI
-- Support for PDF documents
-- Save and manage highlights across websites
-- Direct export to Anki decks
-- Download flashcards as CSV files
 
 ## Installation
 
@@ -23,24 +21,7 @@ Created by Michael, Philip, Vincent, and Weston for DiamondHacks 2025.
 
 ## Usage
 
-1. Navigate to any web page with content you want to learn
-2. Click the extension icon in your Chrome toolbar
-3. Enter your Gemini API key (required for AI-powered flashcard generation)
-4. Choose your preferred options
-5. Click one of the generation buttons:
-   - "Generate Summary" - summarizes the entire article
-   - "Generate Flashcards" - processes the entire article
-   - "Generate Cards from Highlights" - processes only text you've highlighted and saved
-
-After generation, you can:
-- Read a summary of the page
-- View and flip through the generated flashcards in the popup
-- Download the flashcards as a CSV file
-- Send the flashcards directly to Anki (see setup below)
-
-## Anki Integration Setup
-
-To enable direct export to Anki decks:
+### Set up Anki
 
 1. **Install Anki**: Download and install [Anki](https://apps.ankiweb.net/) if you haven't already.
 
@@ -50,11 +31,18 @@ To enable direct export to Anki decks:
    - Enter the code: `2055492159`
    - Click "OK" and restart Anki when prompted
 
-3. **Using the Anki integration**:
-   - Make sure Anki is running before using the extension
-   - Select your target Anki deck from the dropdown in the extension popup
-   - Generate flashcards as usual
-   - Click "Send to Anki" instead of downloading the CSV
-   - The cards will be added directly to your selected Anki deck
+**Note: Anki must be running for the direct export feature to work.**
 
-**Note**: Anki must be running for the direct export feature to work.
+### Using the Extension
+
+1. Navigate to [OpenRouter](https://openrouter.ai/settings/keys) -> Create Key
+2. Enter your OpenRouter API key
+3. Navigate to any web page with content you want to learn
+4. Generate flashcards from specific highlights or the entire article
+5. Reap your new learnings!
+
+## Features
+- Generate flashcards with absolutely minimal friction with direct import to Anki
+- Customize your cards with your own prompt
+- Generate flashcards from the entire article or specific highlights
+- Generate summary with one click
